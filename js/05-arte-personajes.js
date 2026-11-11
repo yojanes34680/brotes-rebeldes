@@ -66,7 +66,7 @@ function drop(c,x,y,s){c.save();c.translate(x,y);c.scale(s,s);c.beginPath();c.mo
 
 // ===== Utilidades de dibujo de personajes (contorno, degradados, ojos y bocas) =====
 const OL='#22140c';
-let PSTY=0;// 1 = construyendo sprite de personaje (estilo Heroic Toy)
+let PSTY=0,RIGF=0;// 1 = construyendo sprite de personaje (estilo Heroic Toy)
 function P(c,fill,lw){c.fillStyle=fill;c.fill();if(PSTY){c.lineWidth=(lw||3)*.55;c.strokeStyle=typeof fill==='string'&&fill[0]==='#'?cshift(fill,-.62):'rgba(40,22,10,.8)'}else{c.lineWidth=lw||3;c.strokeStyle=OL}c.lineJoin='round';c.stroke()}
 function LG(c,x0,y0,x1,y1,st){const g=c.createLinearGradient(x0,y0,x1,y1);st.forEach((s,i)=>g.addColorStop(i/(st.length-1),s));return g}
 function RG(c,x,y,r,st,fx,fy){const g=c.createRadialGradient(fx===undefined?x-r*.35:fx,fy===undefined?y-r*.4:fy,r*.08,x,y,r);st.forEach((s,i)=>g.addColorStop(i/(st.length-1),s));return g}
@@ -123,7 +123,7 @@ function skinSprite(k,skin){const key=k+'|'+skin;if(SPR[key])return SPR[key];con
  SPR[key]={img:cv2,cw:base.cw,ch:base.ch,ox:base.ox,oy:base.oy};return SPR[key]}
 // Sprite de un personaje (con su aspecto, si tiene). Todos los personajes usan el arte v2 (LOOK).
 function heroSprite(k,skin){if(skin&&SKINS[skin])return skinSprite(k,skin);return charSprite(k)}
-function drawUnit(c,k,x,y,s,t,rank,pop,skin,af,face){return drawChar(c,k,x,y,s,t,rank,pop,skin,af,face)}
+function drawUnit(c,k,x,y,s,t,rank,pop,skin,af,face,st){return drawChar(c,k,x,y,s,t,rank,pop,skin,af,face,st)}
 
 // ===================== ESTILO «JUGUETE HEROICO» (arte v2) =====================
 // Aclara (a>0) u oscurece (a<0) un color #rrggbb.
@@ -240,10 +240,11 @@ function chBack(c,bk,hy){switch(bk.t){
  case 'petalwings':{c.globalAlpha=.88;for(const [a,l,j] of [[-2.55,36,.5],[-2.15,30,-.4],[-.6,36,-.5],[-1,30,.4]]){c.save();c.translate(0,-48);c.rotate(a);petal(c,l,10,'round',bk.c,'#ffffff',j);c.restore()}c.globalAlpha=1;break}
  case 'flamewings':{c.save();c.globalCompositeOperation='lighter';E(c,0,-52,50,42);c.fillStyle=RG(c,0,-52,50,['rgba(255,170,40,.55)','rgba(255,80,20,0)'],0,-52);c.fill();c.restore();
   for(const sd of [-1,1])for(const [a,l,j] of [[-.6,46,.8],[-.22,38,-.6],[.15,30,.5],[.45,22,-.4]]){c.save();c.translate(sd*6,-48);c.scale(sd*(sd<0?.9:1),1);c.rotate(-Math.PI/2-.7+a);petal(c,l,10,'flame','#ffe14a','#d8200a',j);c.restore()}break}}}
-function chBody(c,B){const w=B.t==='bulky'?1.22:B.t==='slim'?.86:1,sh=2,boot=B.boot||'#a8743a',leaf=B.leaf||'#7fd04a',leafDk=B.leafDk||'#2f7a1f';
- for(const sd of [-1,1]){const k=sd<0?.9:1,lx=sd*9.5*w+(sd>0?sh*.5:0);
+function chBody(c,B,mode){const w=B.t==='bulky'?1.22:B.t==='slim'?.86:1,sh=2,boot=B.boot||'#a8743a',leaf=B.leaf||'#7fd04a',leafDk=B.leafDk||'#2f7a1f';
+ if(mode!=='torso')for(const sd of [-1,1]){const k=sd<0?.9:1,lx=sd*9.5*w+(sd>0?sh*.5:0);
   VOL(c,cc=>{RRp(cc,lx-4.5*k,-25,9*k,18,4)},B.dk,{bb:[lx-5,-25,lx+5,-7],rim:3});
   VOL(c,cc=>{cc.beginPath();cc.moveTo(lx-10*k,0);cc.bezierCurveTo(lx-12*k,-11,lx-4,-15,lx+2,-14);cc.bezierCurveTo(lx+11*k,-13,lx+13*k,-5,lx+12*k,0);cc.closePath()},boot,{bb:[lx-12,-15,lx+13,0],spec:[lx-3,-10,3.2,1.5,0]})}
+ if(mode==='legs')return;
  if(B.t==='robe'){
   VOL(c,cc=>{cc.beginPath();cc.moveTo(-15,-55);cc.quadraticCurveTo(sh,-61,16+sh,-55);cc.bezierCurveTo(23+sh,-40,26,-22,29,-7);for(let i=0;i<6;i++){const xx=29-i*9.66;cc.quadraticCurveTo(xx-4.8,-2+(i%2?3:-1),xx-9.66,-6+(i%2?0:1))}cc.bezierCurveTo(-26,-22,-22,-40,-15,-55);cc.closePath()},B.col,{bb:[-29,-61,29,-3],light:B.l,dark:B.dk,spec:[-9,-46,3.4,8,.3]});
   if(B.trim){c.beginPath();c.moveTo(sh,-58);c.quadraticCurveTo(sh+1.5,-30,sh*.5,-6);c.strokeStyle=B.trim;c.lineWidth=3.2;c.stroke()}}
@@ -302,7 +303,7 @@ function chHead(c,H,hy){const r=H.r||22,G3=H.c;
   for(let i=-4;i<=4;i++){const x=i*6.5,yt=-8-(4-Math.abs(i))*1.44;c.beginPath();c.moveTo(x-2.8,yt);c.lineTo(x,yt+9);c.lineTo(x+2.8,yt);c.closePath();P(c,'#ffffff',1.3)}
   for(const sd of [-1,1]){c.beginPath();c.moveTo(sd*28,-12);c.lineTo(sd*38,-16);c.lineTo(sd*30,-8);P(c,'#ffe0a0',1.4)}
   if(H.spot)for(const [sx,sy] of [[-16,-30],[10,-34],[20,-22]]){E(c,sx,sy,3,2.4);c.fillStyle=H.spot;c.fill()}
-  shine(c,-12,-32,8,3,-.3,.4);eyesHQ(c,0,-26,10,6,6.6,H.iris,H.mood,H.skin);c.restore();return{top:hy+6-44*k,fy:hy-20*k,fr:r*.8,noFace:1}}
+  shine(c,-12,-32,8,3,-.3,.4);if(!RIGF)eyesHQ(c,0,-26,10,6,6.6,H.iris,H.mood,H.skin);else RIGF={ex:0,ey:hy+6-26*k,sp:10*k,rx:6*k,ry:6.6*k,jaw:1};c.restore();return{top:hy+6-44*k,fy:hy-20*k,fr:r*.8,noFace:1}}
  case 'acorn':E(c,0,hy+5,r*.92,r*1.02);P(c,RG(c,0,hy+5,r*1.05,G3),3);shine(c,-r*.45,hy+2,r*.16,r*.32,.2,.4);
   c.beginPath();c.moveTo(-r*1.08,hy-r*.3);c.bezierCurveTo(-r*1.1,hy-r*1.35,r*1.1,hy-r*1.35,r*1.08,hy-r*.3);c.quadraticCurveTo(0,hy-r*.12,-r*1.08,hy-r*.3);P(c,LG(c,0,hy-r*1.2,0,hy-r*.2,H.cap),3);
   c.save();c.clip();c.strokeStyle='rgba(30,15,5,.45)';c.lineWidth=1.3;for(let i=-6;i<=6;i++){c.beginPath();c.moveTo(i*5-12,hy-r*1.3);c.lineTo(i*5+12,hy-r*.1);c.moveTo(i*5+12,hy-r*1.3);c.lineTo(i*5-12,hy-r*.1);c.stroke()}c.restore();
@@ -480,10 +481,13 @@ const artPng=()=>typeof save!=='undefined'&&save.opts.art===1;
 function setArt(i){save.opts.art=i;for(const key of Object.keys(SPR))if(UNIT_PNGS.some(k=>key===k||key.startsWith(k+'|')))delete SPR[key]}
 // Personajes que tienen imagen en assets/units/. Al agregar un PNG nuevo, añade aquí su id (así no se piden archivos que no existen).
 const UNIT_PNGS=['espina','hielo','fuego','rayo','rocio'];
+// Primera fila con píxeles visibles de cada PNG (sobre su alto original): se usa cuando el navegador no deja leer
+// los píxeles (al abrir con doble clic, file:// da SecurityError en getImageData). Recalcular si cambias una imagen.
+const UNIT_PNG_TOP={espina:[0,403],hielo:[62,403],fuego:[100,403],rayo:[112,403],rocio:[130,403]};
 function loadUnitPngs(){for(const k of UNIT_PNGS){if(!ALL.includes(k))continue;const im=new Image();im.onload=()=>{UNIT_IMG[k]=im;for(const key of Object.keys(SPR))if(key===k||key.startsWith(k+'|'))delete SPR[key]};im.onerror=()=>{};im.src='assets/units/'+k+'.png'}}
 function pngSprite(k){const im=UNIT_IMG[k],R=2.4,f=PNG_H/im.height,w=im.width*f,cw=Math.max(240,Math.ceil(w)+20),ch=250,ox=cw/2,oy=212;
  const cv2=document.createElement('canvas');cv2.width=Math.ceil(cw*R);cv2.height=ch*R;const c=cv2.getContext('2d');c.imageSmoothingQuality='high';c.drawImage(im,(ox-w/2)*R,(oy-PNG_H+3)*R,w*R,PNG_H*R);
- let top=-PNG_H+3;try{const q=document.createElement('canvas');q.width=im.width;q.height=im.height;const g=q.getContext('2d');g.drawImage(im,0,0);const d=g.getImageData(0,0,im.width,im.height).data;let row=0;outer:for(;row<im.height;row++)for(let x=0;x<im.width;x++)if(d[(row*im.width+x)*4+3]>40)break outer;top+=row*f}catch(e){}
+ let top=-PNG_H+3;try{const q=document.createElement('canvas');q.width=im.width;q.height=im.height;const g=q.getContext('2d');g.drawImage(im,0,0);const d=g.getImageData(0,0,im.width,im.height).data;let row=0;outer:for(;row<im.height;row++)for(let x=0;x<im.width;x++)if(d[(row*im.width+x)*4+3]>40)break outer;top+=row*f}catch(e){const P=UNIT_PNG_TOP[k];if(P)top+=P[0]/P[1]*PNG_H}
  return {img:cv2,cw,ch,ox,oy,top,png:1}}
 // Silueta blanca del sprite (para el destello), calculada una vez.
 const PWH=new WeakMap();
@@ -502,10 +506,6 @@ function phaseBack(c,r,t,col,top){r=Math.min(r|0,5);if(r<2)return;top=top||-150;
 function crownAt(c,y,s,cols,gem){c.save();c.translate(0,y);c.scale(s,s);c.beginPath();c.moveTo(-13,0);c.lineTo(-15,-14);c.lineTo(-7,-6);c.lineTo(0,-17);c.lineTo(7,-6);c.lineTo(15,-14);c.lineTo(13,0);c.closePath();
  c.fillStyle=LG(c,0,-17,0,0,cols);c.fill();c.strokeStyle='#2a1a06';c.lineWidth=1.6;c.stroke();if(gem){E(c,0,-4,2.8,2.8);c.fillStyle=gem;c.fill();c.strokeStyle='#2a1a06';c.lineWidth=1;c.stroke();E(c,-.8,-4.8,.9,.7);c.fillStyle='#fff';c.fill()}c.restore()}
 function phaseFront(c,r,t,col,top){r=Math.min(r|0,5);if(r<2)return;top=top||-150;const h=-top,y=top+2;
- if(r===2){for(const sd of [-1,1])for(let i=0;i<3;i++){c.save();c.translate(sd*(8+i*5),y+4+i*3);c.rotate(sd*(.9+i*.25));E(c,0,-4,2.6,5);c.fillStyle=i%2?'#e0a050':'#b8742a';c.fill();c.strokeStyle='#4a2a08';c.lineWidth=.8;c.stroke();c.restore()}}
- else if(r===3){c.save();c.beginPath();c.ellipse(0,y+4,14,4,0,Math.PI*1.05,Math.PI*1.95);c.strokeStyle='#2a2a34';c.lineWidth=4.5;c.stroke();c.strokeStyle='#e8eef8';c.lineWidth=2.6;c.stroke();c.restore();E(c,0,y-1,3.2,3.2);c.fillStyle='#5ad8ff';c.fill();c.strokeStyle='#2a2a34';c.lineWidth=1;c.stroke()}
- else if(r===4)crownAt(c,y+5,1,['#fff6b0','#ffd23f','#c88a10'],'#ff4a6a');
- else{crownAt(c,y+5,1.15,['#ffffff','#e8b0ff','#8a3ad8'],'#ffd23f');c.save();c.globalCompositeOperation='lighter';c.beginPath();c.ellipse(0,y-16+Math.sin(t*2)*2,16,4.5,0,0,7);c.strokeStyle='rgba(255,230,140,.9)';c.lineWidth=2.4;c.stroke();c.restore()}
  if(r>=3){const n=r===3?2:r===4?4:6;c.save();c.globalCompositeOperation='lighter';for(let i=0;i<n;i++){const a=t*1.8+i/n*Math.PI*2,x=Math.cos(a)*30,yy=-h*.45+Math.sin(a)*h*.28;c.globalAlpha=.7;c.drawImage(glowSprite(r>=5?'#e8a0ff':col||'#fff3a0'),x-5,yy-5,10,10)}c.restore()}}
 // Insignia de fase: escudo del color de la fase con el número en romano.
 function phaseBadge(c,x,y,s,r){c.save();c.translate(x,y);c.scale(s,s);const col=r<=5?PH_COL[r]:RANKCOL[r]||'#fff';c.beginPath();c.moveTo(0,-13);c.lineTo(11,-9);c.lineTo(10,4);c.quadraticCurveTo(6,11,0,14);c.quadraticCurveTo(-6,11,-10,4);c.lineTo(-11,-9);c.closePath();
@@ -536,20 +536,7 @@ function charSprite(k){if(SPR[k])return SPR[k];if(UNIT_IMG[k]&&artPng())return S
  for(let i=0;i<16;i++){const a=i/16*Math.PI*2;o.drawImage(sil,Math.cos(a)*th,Math.sin(a)*th)}
  o.drawImage(A,0,0);
  SPR[k]={img:out,cw,ch,ox,oy,top:I.top};return SPR[k]}
-function drawChar(c,k,x,y,s,t,rank,pop,skin,af,face){if(UNIT_IMG[k]&&artPng())return drawCharPng(c,k,x,y,s,t,rank,pop,skin,af,face);const L=LOOK[k],U=UT[k],sp=heroSprite(k,skin),p=pop||0,a=clamp((af||0)/.3,0,1),S=s*.82*PH_SZ[Math.min(rank|0,5)],ph=t+x*.013,tier=U.t||'cobre';
- let ix=0,iy=0,rot=0,sx=1,sy=1,wa=0;
- switch(L.idle){case 'sway':rot=Math.sin(ph*2)*.05;break;case 'breathe':sy=1+Math.sin(ph*2.4)*.03;sx=1-Math.sin(ph*2.4)*.015;break;case 'hop':iy=-Math.abs(Math.sin(ph*3))*5;break;case 'float':iy=-7+Math.sin(ph*2)*3.5;break;case 'jitter':ix=Math.sin(ph*23)*.7;iy=Math.sin(ph*31)*.6;break;default:iy=Math.sin(ph*3.2)*1.8}
- const br=Math.sin(ph*2.6);sx*=1-br*.02;sy*=1+br*.032;const lag=Math.sin(ph*2.6-.9)*1.7;
- if(a>0){const q=Math.sin(a*Math.PI);sx*=1+.08*q;sy*=1-.09*q}switch(L.atk){case 'recoil':ix-=11*a;wa=-.25*a;break;case 'lunge':ix+=9*a;iy-=2*a;wa=.4*a;break;case 'raise':wa=-1.1*a;iy-=3*a;break;case 'twirl':rot+=Math.sin(a*Math.PI)*.35;break;case 'stomp':sy*=1-.16*a;sx*=1+.12*a;break;case 'flash':wa=-.4*a;break}
- c.save();c.translate(x,y+36*s);c.scale(face||1,1);E(c,0,0,24*s*(L.idle==='float'?.72:1),6*s);c.fillStyle='rgba(0,0,0,.3)';c.fill();
- c.scale(S,S);tierBack(c,tier,t);phaseBack(c,rank,t,U.shot,sp.top);c.translate(ix,iy);c.rotate(rot);c.scale(sx*(1+p*.18),sy*(1-p*.1));
- if(L.atk==='flash'&&a>0){c.globalAlpha=a*.55;circ(c,0,-70,62,U.shot);c.globalAlpha=1}
- if(L.fx==='glow'){c.globalAlpha=.22+.1*Math.sin(t*2.5)+a*.3;circ(c,0,-66,56,L.fxc||'#fff');c.globalAlpha=1}
- c.drawImage(mip(sp.img,sp.cw,sp.ch,S*DPR*Math.max(sx,sy)*(1+p*.18)*1.15),-sp.ox,-sp.oy,sp.cw,sp.ch);
- const W=L.w,hx=W.hx+lag*.35,hyy=W.hy+lag;if(W.t!=='none'){c.save();c.translate(hx,hyy);c.rotate((W.a||0)+wa+lag*.015);drawWeapon(c,W,t,a);muzzle(c,W,a,U.shot);c.restore()}
- armHQ(c,13,-46,hx,hyy,L.arm,L.b.t==='bulky'?8.5:6.5);chFx(c,L,t,a);tierFront(c,tier,t);phaseFront(c,rank,t,U.shot,sp.top);c.restore();
- if(typeof save!=='undefined'&&save.opts.cb)shapeMark(c,k,x-24*s,y+22*s,12*s);
- if(rank)phaseBadge(c,x+25*s*(face||1),y-38*s,s,rank);}
+// drawChar (rig articulado) está en js/05b-rig-personajes.js
 // ===================== AVATARES DE COMANDANTES =====================
 // Retrato en un círculo de 200×200 (diseño propio): fondo de rareza, espalda, ropa, cabeza, cara, barba, gafas, pelo, sombrero, objeto y detalles.
 const AV={

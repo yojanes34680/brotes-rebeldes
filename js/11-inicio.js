@@ -102,7 +102,7 @@ addEventListener('unhandledrejection',e=>{console.error(e.reason);notify('⚠ Al
 let last=performance.now();
 // Paso fijo de 1/60 s: el resultado no depende de los FPS, así las repeticiones son exactas.
 function loop(now){const dt=Math.min(.1,(now-last)/1000);last=now;
- try{if(scene==='game'&&G&&!CRASH){if(!G.paused&&!G.over){acc+=dt*G.speed;let n=0;while(acc>=STEP&&n<24&&!G.over){step();acc-=STEP;n++}if(n>=24)acc=0}draw()}else drawMenu(now/1000);if(cardK&&!document.getElementById('card').classList.contains('hidden'))drawCardPortrait(now/1000);animCards(now/1000);if(cmdK&&!document.getElementById('cmdcard').classList.contains('hidden'))drawCmdPortrait(now/1000)}catch(err){reportCrash(err)}
+ try{if(scene==='game'&&G&&!CRASH){if(!G.paused&&!G.over&&G.introT>0)G.introT-=dt;else if(!G.paused&&!G.over){acc+=dt*G.speed;let n=0;while(acc>=STEP&&n<24&&!G.over){step();acc-=STEP;n++}if(n>=24)acc=0}draw()}else drawMenu(now/1000);if(cardK&&!document.getElementById('card').classList.contains('hidden'))drawCardPortrait(now/1000);animCards(now/1000);if(cmdK&&!document.getElementById('cmdcard').classList.contains('hidden'))drawCmdPortrait(now/1000)}catch(err){reportCrash(err)}
  requestAnimationFrame(loop)}
 applyA11y();loadUnitPngs();
 {let msg=checkSeason();const pn=checkPassSeason();if(pn)msg=(msg?msg+'<br><br>':'')+`Terminó la temporada del pase: te entregamos automáticamente ${pn} premio${pn>1?'s':''} sin reclamar.`;if(!save.name)show('name');else if(msg)showResult('Nueva temporada',msg,null,false,true);else show('menu');if(LOAD_NOTE)setTimeout(()=>notify(LOAD_NOTE,'err',14000),300)}

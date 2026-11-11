@@ -452,9 +452,11 @@ button.gem{border-color:#f0c8ff}
         <button class="gold small" style="margin-top:auto" onclick="startSandbox()">▶ Empezar</button></div>
       <div class="tc"><div class="n">📝 Oleadas propias</div><div>Arma tus propias listas de oleadas: qué insectos llegan, cuántos y en qué orden. Guárdalas, juégalas y expórtalas a un archivo para compartirlas.</div>
         <div id="tcSets" style="color:#cfe"></div><button class="gold small" style="margin-top:auto" onclick="showEditor()">✏️ Abrir el editor</button></div>
-      <div class="tc"><div class="n">👫 Duelo local</div><div>Dos personas en la misma computadora, cada una con su jardín. Ambas usan tu mazo actual, sin mejoras permanentes (partida justa). También se puede jugar con el mouse.</div>
+      <div class="tc"><div class="n">👫 Duelo local</div><div>Dos personas en la misma computadora, cada una con su jardín. Cada una elige uno de tus mazos guardados y su comandante, sin mejoras permanentes (partida justa). También se puede jugar con el mouse.</div>
         <div class="o"><span>Nombre del jugador 2</span><input type="text" id="p2Name" maxlength="16" style="width:180px"></div>
-        <div style="font-size:12px;line-height:1.5"><b style="color:#ffe14a">Jugador 1:</b> mover WASD · plantar E · elegir/fusionar F · potenciar 1–5<br><b style="color:#4fd8ff">Jugador 2:</b> mover flechas · plantar Shift derecho · elegir/fusionar Enter · potenciar 6–0</div>
+        <div class="o"><span style="color:#ffe14a">Jugador 1</span><select id="vsDeck1"></select><select id="vsCmd1"></select></div>
+        <div class="o"><span style="color:#4fd8ff">Jugador 2</span><select id="vsDeck2"></select><select id="vsCmd2"></select></div>
+        <div style="font-size:12px;line-height:1.5"><b style="color:#ffe14a">Jugador 1:</b> mover WASD · plantar E · elegir/fusionar F · potenciar 1–5 · comandante Q<br><b style="color:#4fd8ff">Jugador 2:</b> mover flechas · plantar Shift derecho · elegir/fusionar Enter · potenciar 6–0 · comandante Ctrl derecho o + numérico</div>
         <button class="gold small" style="margin-top:auto" onclick="startVersus()">▶ Empezar duelo</button></div>
     </div>
   </div>
@@ -565,6 +567,8 @@ button.gem{border-color:#f0c8ff}
 <script src="js/03-datos.js"></script>
 <script src="js/04-progreso.js"></script>
 <script src="js/05-arte-personajes.js"></script>
+<script src="js/05b-rig-personajes.js"></script>
+<script src="js/05c-comandantes-campo.js"></script>
 <script src="js/06-arte-insectos.js"></script>
 <script src="js/07-simulacion.js"></script>
 <script src="js/08-render.js"></script>

@@ -7,7 +7,7 @@ const PROF_KEY='brotes_rebeldes_profile';let PROF=0;try{PROF=clamp(parseInt(loca
 const profKeys=i=>i?[`brotes_rebeldes_v3_p${i+1}`,`brotes_rebeldes_replays_p${i+1}`,`brotes_rebeldes_v3_p${i+1}_respaldo`]:['brotes_rebeldes_v3','brotes_rebeldes_replays','brotes_rebeldes_v3_respaldo'];
 const SAVE_KEY=profKeys(PROF)[0],OLD_KEY=PROF?'brotes_rebeldes_none':'brotes_rebeldes_v2',REP_KEY=profKeys(PROF)[1],BAK_KEY=profKeys(PROF)[2];
 function defSave(){return{ver:4,name:'',coins:0,gems:0,up:{},premSkins:[],shopDay:'',shopBought:[],cleared:0,unlocked:['espina','hielo','fuego','rayo','rocio'],deck:['espina','hielo','fuego','rayo','rocio'],lv:{},bestSurv:0,daily:'',trophies:0,bestTrophies:0,season:null,tut:0,
- xp:0,cmd:null,cmds:null,cmdLv:{},decks:null,deckIdx:0,mainMode:'',chapC:[0,0],eventWeek:-1,waveSets:[],p2name:'Jugador 2',sbx:{dew:1,inf:1,auto:0,hp:1},
+ xp:0,cmd:null,cmds:null,cmdLv:{},decks:null,deckIdx:0,mainMode:'',chapC:[0,0],eventWeek:-1,waveSets:[],p2name:'Jugador 2',vs:{d1:0,c1:'',d2:0,c2:''},stars:{},mastery:{},sbx:{dew:1,inf:1,auto:0,hp:1},
  inv:{chests:{comun:0,raro:0,epico:0},gear:{fuerza:0,veloz:0,certero:0}},eq:{},relics:[],relEq:[],skins:{},skin:{},pass:{season:null,xp:0,claimed:[]},ladderWins:0,quests:{},ach:{},achSeen:[],seen:{},
  opts:{diff:1,spd:1,noFlash:false,vol:.8,mus:.5,fx:.8,cb:false,ts:0,art:0},stats:{played:{},won:{},kills:0,bestRank:1,pl:{},kk:{},mr:{}}}}
 const save=defSave();
@@ -96,7 +96,7 @@ const CMDS={
   ad:L=>`Recuperas 1 ❤ (si estás al máximo, un escudo bloquea el próximo insecto que llegue al final) y las raíces inmovilizan a todos los insectos ${f1(3+.15*(L-1))} s (jefes, 3/4 de ese tiempo).`,pd:'Los jefes avanzan un 10 % más lento.',q:'«Mientras yo esté, nadie cruza el río.»'},
  // ---- LEGENDARIO ----
  reina:{t:'leyenda',n:'Reina Primavera',ti:'Soberana de todas las flores',ic:'🌸',col:'#ff9ac0',cd:90,an:'Floración',
-  ad:L=>`La mitad de tus plantas (las de nivel más bajo) suben ${L>=8?2:1} nivel${L>=8?'es':''} (máx. 7).`,pd:'+10 % de daño a todo el jardín y cada planta cuesta 5 💧 menos.',gD:.1,q:'«Despertad, hijas mías. Es primavera.»'},
+  ad:L=>`La mitad de tus plantas (las de nivel más bajo) suben ${L>=8?2:1} fase${L>=8?'s':''} (máx. fase V).`,pd:'+10 % de daño a todo el jardín y cada planta cuesta 5 💧 menos.',gD:.1,q:'«Despertad, hijas mías. Es primavera.»'},
  dragon:{t:'leyenda',n:'Verdragón',ti:'El dragón de hojas',ic:'🐉',col:'#5ad84a',cd:60,an:'Aliento verde',
   ad:L=>`Aliento que quita el ${Math.min(95,Math.round(60*cpw(L)))} % de la vida máxima a todos los insectos (${Math.round(15*cpw(L))} % a jefes) y los deja ardiendo.`,pd:'+12 % de daño a todo el jardín.',gD:.12,q:'«Dormí mil años bajo el musgo. Ya desperté.»'},
  cronos:{t:'leyenda',n:'Guardián del Reloj Solar',ti:'Señor de las horas',ic:'⏳',col:'#ffe680',cd:60,an:'Detener el tiempo',

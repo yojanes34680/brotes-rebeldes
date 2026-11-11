@@ -22,6 +22,20 @@ const PHV=()=>!!G&&!!G.o&&(G.o.v|0)>=6&&G.mode!=='auto';
 const V8=()=>!!G&&!!G.o&&(G.o.v|0)>=8;
 // v:9 = sinergias por rol.
 const V9=()=>!!G&&!!G.o&&(G.o.v|0)>=9;
+// v:10 = podar plantas, casillas bendecidas por bioma, aviso de ataques de jefes, tienda de Auto-batalla con oro y leyenda, comandante del jugador 2.
+const V10=()=>!!G&&!!G.o&&(G.o.v|0)>=10;
+// Podar: quita la planta y devuelve el 30 % del costo actual de plantar por cada fase (redondeado).
+function pruneU(b,i){const u=b.slots[i];if(!u)return false;const g=Math.round(.3*b.cost*u.rank),sc=b.cs/96;b.dew+=g;b.slots[i]=null;if(b.sel===i)b.sel=-1;const [x,y]=slotXY(b,i);
+ b.fx.push({type:'txt',x,y:y-30*sc,s:'♻ +'+g,life:1.1,col:'#c8e07a'});for(let q=0;q<8;q++)b.fx.push({type:'spark',x,y,vx:Math.cos(q*.785)*80,vy:Math.sin(q*.785)*60-50,life:.5,col:q%2?'#8a5a2a':'#9ae06a'});if(audible(b))sfx('plant');return true}
+// Casillas bendecidas: 2 por tablero, fijas según la semilla; el efecto depende del bioma (Huerto, Bosque, Volcánicas).
+const BLESS=[{spd:.18,n:'Huerto',ic:'☀️',col:'#ffd23f'},{dmg:.15,gen:.25,n:'Bosque',ic:'🍃',col:'#7aff6a'},{dmg:.22,burn:1,n:'Volcánicas',ic:'🔥',col:'#ff6a2a'}];
+function simBio(){const o=G.o;if(G.mode==='campaign')return (o.ch||0)%3;if(G.mode==='tutorial')return 0;return (o.seed>>>0)%3}
+function blessOf(b){if(b.bless)return b.bless;const n=b.slots.length,s=((G.o.seed>>>0)+Math.max(0,G.boards.indexOf(b))*7919)>>>0,a=s%n,c=(a+1+((s>>>5)%(n-1)))%n;return b.bless={t:[a,c],bio:simBio()}}
+// Aviso de ataque (v:10): Mantis, Polilla, Escorpión y Viuda eligen sus casillas 1,2 s antes y solo golpean esas (se puede esquivar moviendo la planta).
+function telPick(b,ins,n,key){const occ=b.slots.map((s,i)=>s?i:-1).filter(i=>i>=0),s=[];for(let k=0;k<n&&occ.length;k++)s.push(occ.splice(Math.floor(sr()*occ.length),1)[0]);ins.tel=s;ins.telK=key}
+function telTake(b,ins){const s=(ins.tel||[]).filter(i=>b.slots[i]);ins.tel=null;return s}
+function nearSlot(b,x,y){let best=-1,bd=1e9;b.slots.forEach((u,i)=>{if(!u)return;const [sx,sy]=slotXY(b,i),dd=Math.hypot(sx-x,sy-y);if(dd<bd){bd=dd;best=i}});return best}
+function chStars(ch){const S=(save.stars||{})[ch]||[];let n=0;for(let i=0;i<10;i++)n+=S[i]||0;return n}
 // Sinergias activas de un tablero: t[rol] = nivel 0–2; all = cadencia extra global (Apoyo); gen = rocío extra (Productor).
 function synergyOf(b){const n=roleCounts(b.slots.map(s=>s&&s.k)),t={};let all=0,gen=0;
  for(const r in n){const v=synTier(n[r]);if(!v||!SYN[r])continue;t[r]=v;if(SYN[r].all)all=SYN[r].all[v-1];if(SYN[r].gen)gen=SYN[r].gen[v-1]}return{t,all,gen,n}}
@@ -54,30 +68,30 @@ function updBoard(b,dt){
   let sl=1;if(ins.slowT>0){ins.slowT-=dt;sl=ins.def.boss?.8:.55}if(ins.markT>0)ins.markT-=dt;
   if(ins.frz>0)ins.frz-=dt;else if(!(ins.curl>0))ins.d+=b.L/ins.def.t*dt*sl*G.spd*b.slowRel*(b.cmd==='guardian'&&ins.def.boss?.9:1)*bugSpd(b,ins,HS,RL,sc);if(ins.def.x)bugAbil(b,ins,dt,sc);
   if(ins.def.curl){if(ins.curl>0)ins.curl-=dt;else{ins.curlT-=dt;if(ins.curlT<=0){ins.curlT=9;ins.curl=2}}}
-  if(ins.def.dust){ins.dustT-=dt;if(ins.dustT<=0){ins.dustT=8;const occ=b.slots.map((s,i)=>s?i:-1).filter(i=>i>=0);
-   for(let n=0;n<3&&occ.length;n++){const j=Math.floor(sr()*occ.length),i=occ.splice(j,1)[0];b.slots[i].stun=3;const [x,y]=slotXY(b,i);for(let q=0;q<6;q++)b.fx.push({type:'spark',x,y:y-10,vx:rand(-60,60),vy:rand(-90,-20),life:.6,col:'#b8a0e0'})}}}
+  if(ins.def.dust){ins.dustT-=dt;if(V10()&&!ins.tel&&ins.dustT<=1.2)telPick(b,ins,3,'dustT');if(ins.dustT<=0){ins.dustT=8;const occ=b.slots.map((s,i)=>s?i:-1).filter(i=>i>=0),v10=V10(),T10=v10?telTake(b,ins):null;
+   for(let n=0;v10?n<T10.length:n<3&&occ.length;n++){const i=v10?T10[n]:occ.splice(Math.floor(sr()*occ.length),1)[0];b.slots[i].stun=3;const [x,y]=slotXY(b,i);for(let q=0;q<6;q++)b.fx.push({type:'spark',x,y:y-10,vx:rand(-60,60),vy:rand(-90,-20),life:.6,col:'#b8a0e0'})}}}
   if(ins.def.heal){ins.healT-=dt;if(ins.healT<=0){ins.healT=7;for(const o of b.insects){if(o.dead)continue;o.hp=Math.min(o.max,o.hp+o.max*(o.def.boss?.06:.12))}
    const [x,y]=posAt(b,ins.d);b.fx.push({type:'txt',x,y:y-40,s:'+ ♥',life:1,col:'#7fff6a',big:1})}}
   if(ins.def.summon){ins.sumT-=dt;if(ins.sumT<=0){ins.sumT=7;for(let n=0;n<3;n++)spawnBug(b,'mosquito',G.hpm*.6,Math.max(0,ins.d-10-n*12))}}
-  if(ins.def.cut){ins.cutT-=dt;if(ins.cutT<=0){ins.cutT=8;const occ=b.slots.map((s,i)=>s?i:-1).filter(i=>i>=0);if(occ.length){const i=spick(occ);const [x,y]=slotXY(b,i);
+  if(ins.def.cut){ins.cutT-=dt;if(V10()&&!ins.tel&&ins.cutT<=1.2)telPick(b,ins,1,'cutT');if(ins.cutT<=0){ins.cutT=8;const occ=b.slots.map((s,i)=>s?i:-1).filter(i=>i>=0);for(const i of V10()?telTake(b,ins):occ.length?[spick(occ)]:[]){const [x,y]=slotXY(b,i);
    b.fx.push({type:'slash',x,y,life:.4});if(b.slots[i].rank>1)b.slots[i].rank--;else b.slots[i]=null}}}
   if(ins.d>=b.L){ins.dead=true;if(b.shield){b.shield=0;const e=b.pts[3];b.fx.push({type:'txt',x:e[0],y:e[1]-30,s:'🌳 ¡Bloqueado!',life:1.4,col:'#e0b070'})}else{b.lives-=ins.def.boss?3:ins.def.elite?2:1;if(audible(b)){sfx('leak');addShake(3)}b.fx.push({type:'flash',life:.4})}}}
  b.insects=b.insects.filter(i=>!i.dead);
  // Auras globales de personajes nuevos (Loto: cadencia, Roble: daño). Con los clásicos valen 0 y no cambian nada.
  let gS=0,gD=0;for(const s of b.slots)if(s){const U=UT[s.k];if(U.gspd)gS+=U.gspd*s.rank;if(U.gdmg)gD+=U.gdmg*s.rank}
- const SY=V9()?synergyOf(b):null;b.syn=SY;
+ const SY=V9()?synergyOf(b):null;b.syn=SY;const BL=V10()&&G.mode!=='auto'?blessOf(b):null;
  const CMc=b.cmd&&CMDS[b.cmd];let cS=CMc&&CMc.gS||0,cD=CMc&&CMc.gD||0;if(b.bSpdT>0){b.bSpdT-=dt;cS+=b.bSpd}if(b.bDmgT>0){b.bDmgT-=dt;cD+=b.bDmg}if(b.critT>0)b.critT-=dt;
  for(let i=0;i<b.slots.length;i++){const u=b.slots[i];if(!u)continue;if(u.pop>0)u.pop-=dt;if(u.af>0)u.af-=dt;if(u.stun>0){u.stun-=dt;continue}
   let spd=1,bD=0;const col=i%COLS,row=Math.floor(i/COLS);for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const c2=col+dc,r2=row+dr;if(c2<0||c2>=COLS||r2<0||r2>=ROWS)continue;const n=b.slots[r2*COLS+c2];if(n&&n.rank>=5&&PHV())spd+=.08;if(n&&n.k==='sol')spd+=.08*n.rank;else if(n&&UT[n.k].bspd)spd+=UT[n.k].bspd*n.rank;if(n&&UT[n.k].bdmg)bD+=(n.k==='lavanda'&&V8()?LAV8:UT[n.k].bdmg)*n.rank}
-  if(gS||cS)spd*=(1+gS)*(1+cS);if(SY){const r=synRole(UT[u.k].r),t=SY.t[r];if(t&&SYN[r].spd)spd*=1+SYN[r].spd[t-1];if(SY.all)spd*=1+SY.all}if(u.slowT>0){u.slowT-=dt;spd*=.5}
-  if(i===b.sel&&!b.isAI){const U=UT[u.k];let dm=bD||gD||cD?unitDmg(b,u)*(1+bD+gD)*(1+cD):unitDmg(b,u);if(SY){const r=synRole(U.r),t=SY.t[r];if(t&&SYN[r].dmg)dm*=1+SYN[r].dmg[t-1]}
+  const bl=BL&&BL.t.includes(i)?BLESS[BL.bio]:null;if(bl&&bl.spd)spd*=1+bl.spd;if(gS||cS)spd*=(1+gS)*(1+cS);if(SY){const r=synRole(UT[u.k].r),t=SY.t[r];if(t&&SYN[r].spd)spd*=1+SYN[r].spd[t-1];if(SY.all)spd*=1+SY.all}if(u.slowT>0){u.slowT-=dt;spd*=.5}
+  if(i===b.sel&&!b.isAI){const U=UT[u.k];let dm=bD||gD||cD?unitDmg(b,u)*(1+bD+gD)*(1+cD):unitDmg(b,u);if(SY){const r=synRole(U.r),t=SY.t[r];if(t&&SYN[r].dmg)dm*=1+SYN[r].dmg[t-1]}if(bl&&bl.dmg)dm*=1+bl.dmg;
    const iv=U.int/(1+.08*(u.rank-1))/(1+.1*gc(b,u.k,'veloz'))/(PHV()?PH_S[Math.min(u.rank,5)]:1);u.ui={dm,rate:spd/iv,bD,stun:u.stun>0}}
-  if(u.k==='rocio'){u.gen-=dt;if(u.gen<=0){u.gen=6;const g=Math.round(3*u.rank*(b.cmd==='lluvia'?1.5:1)*(b.cmd==='alquimista'?1.3:1)*(SY?1+SY.gen:1));b.dew+=g;const [x,y]=slotXY(b,i);b.fx.push({type:'txt',x,y:y-30*sc,s:'+'+g,life:.9,col:'#9fe0ff'})}}
-  else if(UT[u.k].gen){u.gen-=dt;if(u.gen<=0){u.gen=6;const g=Math.round(UT[u.k].gen*u.rank*(b.cmd==='lluvia'?1.5:1)*(b.cmd==='alquimista'?1.3:1)*(SY?1+SY.gen:1));b.dew+=g;const [x,y]=slotXY(b,i);b.fx.push({type:'txt',x,y:y-30*sc,s:'+'+g,life:.9,col:'#ffe680'})}}
+  if(u.k==='rocio'){u.gen-=dt;if(u.gen<=0){u.gen=6;const g=Math.round(3*u.rank*(b.cmd==='lluvia'?1.5:1)*(b.cmd==='alquimista'?1.3:1)*(SY?1+SY.gen:1)*(bl&&bl.gen?1+bl.gen:1));b.dew+=g;const [x,y]=slotXY(b,i);b.fx.push({type:'txt',x,y:y-30*sc,s:'+'+g,life:.9,col:'#9fe0ff'})}}
+  else if(UT[u.k].gen){u.gen-=dt;if(u.gen<=0){u.gen=6;const g=Math.round(UT[u.k].gen*u.rank*(b.cmd==='lluvia'?1.5:1)*(b.cmd==='alquimista'?1.3:1)*(SY?1+SY.gen:1)*(bl&&bl.gen?1+bl.gen:1));b.dew+=g;const [x,y]=slotXY(b,i);b.fx.push({type:'txt',x,y:y-30*sc,s:'+'+g,life:.9,col:'#ffe680'})}}
   u.cd-=dt*spd;if(u.cd<=0){const U=UT[u.k],tg=U.tgt==='strong'?strongBug(b):firstBug(b);if(tg){u.cd=U.int/(1+.08*(u.rank-1))/(1+.1*gc(b,u.k,'veloz'))/(PHV()?PH_S[Math.min(u.rank,5)]:1);const [x,y]=slotXY(b,i);
-   let dm=bD||gD||cD?unitDmg(b,u)*(1+bD+gD)*(1+cD):unitDmg(b,u);if(SY){const r=synRole(U.r),t=SY.t[r];if(t&&SYN[r].dmg)dm*=1+SYN[r].dmg[t-1]}if(b.critT>0&&sr()<(V8()?.35:.25)+.02*((b.cmdLv||1)-1)){dm*=3;b._cr=1;b.fx.push({type:'txt',x,y:y-38*sc,s:'¡CRÍTICO!',life:.6,col:'#ff9aff'})}else if(PHV()&&u.rank>=4&&sr()<(u.rank>=5?.2:.1)){dm*=u.rank>=5?2.5:2;b._cr=1}
+   let dm=bD||gD||cD?unitDmg(b,u)*(1+bD+gD)*(1+cD):unitDmg(b,u);if(SY){const r=synRole(U.r),t=SY.t[r];if(t&&SYN[r].dmg)dm*=1+SYN[r].dmg[t-1]}if(bl&&bl.dmg)dm*=1+bl.dmg;if(b.critT>0&&sr()<(V8()?.35:.25)+.02*((b.cmdLv||1)-1)){dm*=3;b._cr=1;b.fx.push({type:'txt',x,y:y-38*sc,s:'¡CRÍTICO!',life:.6,col:'#ff9aff'})}else if(PHV()&&u.rank>=4&&sr()<(u.rank>=5?.2:.1)){dm*=u.rank>=5?2.5:2;b._cr=1}
    if(U.m)fireNew(b,u,tg,x,y-20*sc,dm,sc);else b.shots.push({x,y:y-20*sc,tg,k:u.k,rank:u.rank,dmg:dm,bb:1+.15*gc(b,u.k,'certero'),cr:b._cr|0});
-   b._cr=0;if(audible(b))sfx('shot',u.k);u.pop=.12;u.af=.3}else u.cd=0}}
+   if(bl&&bl.burn){tg.pDps=Math.max(tg.pDps,dm*.15);tg.pT=Math.max(tg.pT,2)}b._cr=0;if(audible(b))sfx('shot',u.k);u.pop=.12;u.af=.3}else u.cd=0}}
  for(const s of b.shots){if(s.tg.dead){s.tg=firstBug(b);if(!s.tg){s.dead=true;continue}}
   const [tx,ty]=posAt(b,s.tg.d),dx=tx-s.x,dy=ty-s.y,dist=Math.hypot(dx,dy),v=(s.v||900)*sc*dt;
   if(dist<=v+4){s.dead=true;applyShot(b,s,tx,ty)}else{s.x+=dx/dist*v;s.y+=dy/dist*v}}
@@ -128,7 +142,7 @@ function applyNew(b,s,t,x,y,sc){const P=UT[s.k].p||{},R=s.rank;
 
 // Habilidad activa del comandante (jugador o IA)
 function useCmd(b){if(!b.cmd||b.cmdCd>0)return false;const C=CMDS[b.cmd],L=b.cmdLv||1,pw=cpw(L),sc=b.cs/96,mx=b.bx+b.w/2,my=b.by+b.h/2;
- const rankUp=(n,col)=>{let did=0;for(let k=0;k<n;k++){let lo=8;b.slots.forEach(s=>{if(s&&s.rank<lo)lo=s.rank});if(lo>=7)break;
+ const rankUp=(n,col)=>{let did=0;for(let k=0;k<n;k++){let lo=8;b.slots.forEach(s=>{if(s&&s.rank<lo)lo=s.rank});const mx=PHV()?PH_MAX:7;if(lo>=mx)break;
   const c=b.slots.map((s,i)=>s&&s.rank===lo?i:-1).filter(i=>i>=0),i=spick(c),u=b.slots[i];u.rank++;u.pop=.5;did++;if(!b.isAI&&u.rank>(b.maxR||1))b.maxR=u.rank;if(u.rank>(b.mr[u.k]||0))b.mr[u.k]=u.rank;
   const [x,y]=slotXY(b,i);for(let n2=0;n2<12;n2++)b.fx.push({type:'spark',x,y,vx:rand(-120,120),vy:rand(-160,40),life:.6,col})}return did};
  switch(b.cmd){
@@ -178,7 +192,7 @@ let G=null,scene='menu',current=null,nextFn=null,lastRep=null,acc=0;
 function newGame(o){
  o.seed=o.seed>>>0;SR=mulberry(o.seed);const lv=o.lv||{},L=k=>lv[k]||1;
  G={mode:o.mode,o,duel:o.mode==='duel'||o.mode==='ladder'||o.mode==='mirror'||o.mode==='versus',lvl:o.lvl||0,target:o.target||0,t:0,f:0,wave:0,waveT:6,spd:o.spd||1,hpBase:o.hpBase||1,hpm:1,fury:0,over:false,paused:false,speed:o.speed||1,
-  interval:o.interval||22,rng:SR,drag:null,banner:null,boards:[],acts:[],replay:null,ai:0};
+  interval:o.interval||22,rng:SR,drag:null,banner:null,boards:[],acts:[],replay:null,ai:0,introT:(o.mode==='auto'||window.__TEST__||window.BR_TOUR)?0:INTRO_T};
  if(o.mode==='auto')autoInit(o);
  else if(o.mode==='versus'){G.tier=0;G.cur=[7,7];G.boards.push(makeBoard(70,160,64,o.deck,false,()=>1,100));G.boards.push(makeBoard(570,160,64,o.deck2||o.deck,false,()=>1,100))}
  else if(o.mode==='mirror'){const m=o.mirror;G.tier=0;G.boards.push(makeBoard(70,160,64,o.deck,false,L,100));
@@ -191,11 +205,12 @@ function newGame(o){
   if(o.v>=5){ai.cmd=spick(aiCmdPool(tier,v8));ai.cmdLv=v8?AI8.cmdLv(tier):1+Math.floor(tier*.8);ai.cmdCd=15;cmdStart(ai)}else if(o.v>=2){ai.cmd=spick(CMD_OLD);ai.cmdCd=15}}
  else{G.boards.push(makeBoard(240,148,96,o.deck,false,L,o.dew||100));if(o.up){const B=G.boards[0],u=o.up;B.dew+=15*(u.dew||0);B.cost=Math.max(5,B.cost-(u.cost||0));B.upD=1+.03*(u.dmg||0);B.upC=1-.04*(u.cmd||0)}};
  if(o.cmd&&CMDS[o.cmd]){const me=G.boards[0];me.cmd=o.cmd;me.cmdLv=o.cmdLv||1;me.cmdCd=15;if(o.v>=5)cmdStart(me)}
+ if(o.mode==='versus'&&(o.v|0)>=10&&o.cmd2&&CMDS[o.cmd2]){const p2=G.boards[1];p2.cmd=o.cmd2;p2.cmdLv=o.cmdLv2||1;p2.cmdCd=15;cmdStart(p2)}
  applyKit(G.boards[0],o.gear,o.rel,o.skin);if(o.lives)G.boards[0].lives=o.lives;
  if(o.mode==='tutorial')G.tut=0;
  scene='game';acc=0;AU.mode='game';hideAll()}
 // v:2 = partidas con comandante; v:3 = rotación de 6 jefes. Las repeticiones antiguas se siguen reproduciendo igual.
-function baseOpts(mode,extra){const UP=upSnap(mode);return Object.assign({v:9,...(UP?{up:UP}:{}),cmdLv:save.cmd?save.cmdLv[save.cmd]||1:1,mode,seed:newSeed(),deck:save.deck.slice(),lv:Object.assign({},save.lv),speed:save.opts.spd,cmd:save.cmd&&cmdOn(save.cmd)?save.cmd:null,
+function baseOpts(mode,extra){const UP=upSnap(mode);return Object.assign({v:10,...(UP?{up:UP}:{}),cmdLv:save.cmd?save.cmdLv[save.cmd]||1:1,mode,seed:newSeed(),deck:save.deck.slice(),lv:Object.assign({},save.lv),speed:save.opts.spd,cmd:save.cmd&&cmdOn(save.cmd)?save.cmd:null,
  gear:featOn('gear')?Object.fromEntries(save.deck.filter(k=>save.eq[k]).map(k=>[k,save.eq[k].filter(Boolean)])):{},rel:featOn('relics')?save.relEq.slice():[],skin:Object.assign({},save.skin)},extra)}
 function banner(s,sub,t){G.banner={s,sub,t:t||2.6}}
 // ============ AUTO-BATALLA (fase 5) ============
@@ -213,8 +228,9 @@ function startSandbox(){current=startSandbox;const s=save.sbx;G=null;
  G.sbx={k:'espina',r:1,rm:false};banner('🌼 Jardín libre','Coloca plantas gratis, invoca insectos y prueba combinaciones. Sin premios.',3)}
 function startCustom(set){current=()=>startCustom(set);const W=set.waves.filter(w=>w.length);if(!W.length){uiAlert('Este conjunto no tiene oleadas con insectos.');return}
  newGame(baseOpts('custom',{waves:JSON.parse(JSON.stringify(W)),target:W.length,hpBase:set.hp||1,setName:set.name}));banner(`📝 ${set.name}`,`Tus oleadas: sobrevive ${W.length}`,2.6)}
-function startVersus(){current=startVersus;const n2=(document.getElementById('p2Name').value.trim()||'Jugador 2').slice(0,16);save.p2name=n2;persist();
- newGame(baseOpts('versus',{lv:{},cmd:null,gear:{},rel:[],speed:1,names:[save.name||'Jugador 1',n2]}));
+function startVersus(){current=startVersus;const n2=(document.getElementById('p2Name').value.trim()||'Jugador 2').slice(0,16);save.p2name=n2;const V=vsPick();save.vs=V;persist();
+ const dk=i=>{const d=(save.decks&&save.decks[i]||save.deck).filter(k=>save.unlocked.includes(k));return d.length?d:save.deck.slice()},okC=c=>c&&CMDS[c]&&(save.cmds||[]).includes(c)?c:null;
+ newGame(baseOpts('versus',{lv:{},cmd:okC(V.c1),cmdLv:1,cmd2:okC(V.c2),cmdLv2:1,deck:dk(V.d1),deck2:dk(V.d2),gear:{},rel:[],speed:1,names:[save.name||'Jugador 1',n2]}));
  banner('👫 DUELO LOCAL',`${save.name||'Jugador 1'} (WASD) contra ${n2} (flechas)`,3)}
 function startAuto(){current=startAuto;newGame(baseOpts('auto',{cmd:null,gear:{},rel:[],speed:1,pname:save.name||'Tú'}))}
 function autoInit(o){const A=G.auto={round:0,phase:'shop',parts:[],resT:0,ft:0,maxT:0,pairs:[],last:null};const names=AUTO_NAMES.slice();
@@ -223,14 +239,17 @@ function autoInit(o){const A=G.auto={round:0,phase:'shop',parts:[],resT:0,ft:0,m
   A.parts.push({i,name:i?names[i-1]:(o.pname||'Tú'),hp:AUTO_HP,gold:0,streak:0,alive:true,place:0,board:b,offers:[],pref:i?[spick(AP()),spick(AP())]:[],skill:i?.8+sr()*.2:1,leak:0,rk:0,k0:0});G.boards.push(b)}
  A.me=A.parts[0];autoRound()}
 const autoCount=p=>p.board.slots.filter(Boolean).length;
-function autoOffers(){return[0,1,2,3,4].map(()=>spick(AP()))}
+const ORO_P=ALL.filter(k=>tierOf(k)==='oro'),LEG_P=ALL.filter(k=>tierOf(k)==='leyenda');
+// v:10: desde la ronda 5 aparecen plantas de oro (4 💰) y desde la 8, legendarias (5 💰).
+const autoPrice=k=>V10()?(tierOf(k)==='leyenda'?5:tierOf(k)==='oro'?4:AUTO_COST):AUTO_COST;
+function autoOffers(){if(!V10())return[0,1,2,3,4].map(()=>spick(AP()));const r=G.auto.round;return[0,1,2,3,4].map(()=>{const q=sr();return spick(r>=8&&q<.12?LEG_P:r>=5&&q<.32?ORO_P:AP())})}
 // Desde v:4 la Auto-batalla usa los 20 personajes cobre y plata; las repeticiones antiguas, los 8 clásicos.
 const AP=()=>G.o.v>=4?CP:ORDER;
 function autoRound(){const A=G.auto;A.round++;G.wave=A.round;
  for(const p of A.parts){if(!p.alive)continue;p.gold+=5+(A.round===1?3:0)+Math.min(3,Math.floor(p.gold/10))+(p.streak>=2?1:0);p.offers=autoOffers()}
  A.phase='shop';banner(`Ronda ${A.round}`,`Compra plantas (${AUTO_COST} 💰), fusiona dos iguales y pulsa ¡LISTO! · Máximo ${autoLimit(A.round)} plantas`,3)}
-function autoBuy(p,i){const k=p.offers[i],b=p.board;if(!k||p.gold<AUTO_COST||autoCount(p)>=autoLimit(G.auto.round))return false;const s=b.slots.findIndex(x=>!x);if(s<0)return false;
- p.gold-=AUTO_COST;p.offers[i]=null;b.slots[s]={k,rank:1,cd:.2+sr()*.6,gen:6,pop:.4};b.pl[k]=(b.pl[k]||0)+1;if(audible(b))sfx('plant');return true}
+function autoBuy(p,i){const k=p.offers[i],b=p.board;if(!k||p.gold<autoPrice(k)||autoCount(p)>=autoLimit(G.auto.round))return false;const s=b.slots.findIndex(x=>!x);if(s<0)return false;
+ p.gold-=autoPrice(k);p.offers[i]=null;b.slots[s]={k,rank:1,cd:.2+sr()*.6,gen:6,pop:.4};b.pl[k]=(b.pl[k]||0)+1;if(audible(b))sfx('plant');return true}
 function autoReroll(p){if(p.gold<AUTO_RR)return false;p.gold-=AUTO_RR;p.offers=autoOffers();return true}
 function autoSell(p,i){const u=p.board.slots[i];if(!u)return false;p.gold+=autoSellV(u.rank);p.board.slots[i]=null;if(p.board.sel===i)p.board.sel=-1;return true}
 function autoMergeAny(b){for(let i=0;i<b.slots.length;i++)for(let j=0;j<b.slots.length;j++)if(canMerge(b,i,j))return merge(b,i,j);return false}
@@ -238,9 +257,9 @@ function aiShop(p){let rr=0;const lim=autoLimit(G.auto.round);
  for(let guard=0;guard<40;guard++){if(autoMergeAny(p.board))continue;
   const owned=new Set(p.board.slots.filter(Boolean).map(u=>u.k)),room=autoCount(p)<lim;
   let i=p.offers.findIndex(k=>k&&(owned.has(k)||p.pref.includes(k)));
-  if(room&&p.gold>=AUTO_COST&&i>=0){autoBuy(p,i);continue}
+  if(room&&i>=0&&p.gold>=autoPrice(p.offers[i])){autoBuy(p,i);continue}
   if(p.gold>=AUTO_COST+AUTO_RR&&rr<2){autoReroll(p);rr++;continue}
-  i=p.offers.findIndex(k=>k);if(room&&p.gold>=AUTO_COST&&i>=0&&sr()<p.skill){autoBuy(p,i);continue}
+  i=p.offers.findIndex(k=>k);if(room&&i>=0&&p.gold>=autoPrice(p.offers[i])&&sr()<p.skill){autoBuy(p,i);continue}
   if(room&&p.gold>=AUTO_COST+AUTO_RR&&sr()<p.skill){autoReroll(p);continue}
   break}}
 function autoWave(r){const bl=BOSSES6,pool=['hormiga','mosquito'];if(r>=2)pool.push('mariquita');if(r>=3)pool.push('cucaracha');if(r>=5)pool.push('escarabajo');
@@ -284,7 +303,7 @@ function startEvent(){current=startEvent;const e=curEvent();newGame(baseOpts('ev
 function mirrorPool(){return replays.filter(r=>r&&r.o&&!['tutorial','auto','versus','sandbox'].includes(r.o.mode)&&Array.isArray(r.acts)&&r.acts.length>=8&&Array.isArray(r.o.deck))}
 function startMirror(r){const pool=mirrorPool();if(!pool.length){uiAlert('Primero juega alguna partida (que no sea el tutorial): el Rival espejo aprende de tus repeticiones.');return}
  r=r||pick(pool);current=()=>startMirror(r);const m=mirrorProfile(r);newGame(baseOpts('mirror',{mirror:m,speed:1}));
- banner('👥 RIVAL ESPEJO',`Tu reflejo del ${m.date}: mazo ${m.deck.map(k=>UT[k].n).join(', ')}`,3.5)}
+ banner('👥 RIVAL ESPEJO',`Tu reflejo del ${m.date}: mazo ${TX(m.deck.map(k=>T(UT[k].n)).join(', '))}`,3.5)}
 function startDuel(){current=startDuel;const d=dif();newGame(baseOpts('duel',{tier:d.ai,speed:1}));banner('¡DUELO AMISTOSO!',`Contra la IA (${d.n}, nivel ${d.ai+1}) · No cuenta para la Escalera`)}
 function startLadder(){current=startLadder;const tier=Math.min(9,Math.floor(save.trophies/80));newGame(baseOpts('ladder',{tier,speed:1}));
  banner('¡ESCALERA!',`División ${DIVS[divOf(save.trophies)][1]} · ${save.trophies} 🏆 · IA nivel ${tier+1}`)}
@@ -297,22 +316,22 @@ function startDaily(){current=startDaily;let seed=0;for(const ch of dayKey())see
  const keys=Object.keys(MODS),mods=[];while(mods.length<2){const k=keys[Math.floor(rng()*keys.length)];if(!mods.includes(k))mods.push(k)}
  let deck=save.deck.slice();if(mods.includes('sorpresa'))deck=ORDER.slice().sort(()=>rng()-.5).slice(0,5);
  newGame(baseOpts('daily',{seed,target:12,deck,spd:mods.includes('rapidos')?1.3:1,hpBase:mods.includes('blindados')?1.4:1,dew:mods.includes('rico')?300:100,interval:mods.includes('frenesi')?16:22}));
- banner('Desafío diario','Sobrevive 12 oleadas · '+mods.map(k=>MODS[k]).join(' · '),4)}
+ banner('Desafío diario',TX(T('Sobrevive 12 oleadas')+' · '+mods.map(k=>T(MODS[k])).join(' · ')),4)}
 const TUT=['Pulsa PLANTAR (o la barra espaciadora) dos veces para poner dos plantas.','Arrastra una planta sobre otra igual para fusionarlas: sube a la fase 2. También puedes arrastrarla a otra casilla para moverla.','Toca la carta de abajo (⬆) para potenciar ese tipo de planta. Te regalamos 💧100.','¡Bien! Ahora defiende 5 oleadas. La 5.ª trae un jefe: sigue plantando y fusionando.'];
 function startTutorial(){current=startTutorial;newGame(baseOpts('tutorial',{deck:['espina'],lv:{},dew:200,target:5,hpBase:.7,speed:1,cmd:null,gear:{},rel:[]}));G.tut=0;banner('Tutorial','Aprende lo básico en 4 pasos',2.2)}
-function startReplay(r){current=()=>startReplay(r);newGame(JSON.parse(JSON.stringify(r.o)));G.replay=r;G.speed=1;banner('🎬 Repetición',`${modeLabel(r.o)} · ${r.date}`,2)}
+function startReplay(r){current=()=>startReplay(r);newGame(JSON.parse(JSON.stringify(r.o)));G.replay=r;G.introT=0;G.speed=1;banner('🎬 Repetición',`${modeLabel(r.o)} · ${r.date}`,2)}
 function modeLabel(o){if(o.mode==='campaign')return `Campaña · ${CHAPTERS[o.ch||0].n} ${(o.lvl||0)+1}`;if(o.mode==='event'){const e=EVENTS.find(x=>x.id===o.event);return `Evento · ${e?e.n:''}`}
  if(o.mode==='mirror'&&o.mirror)return `Rival espejo · ${o.mirror.name}`;return MODE_N[o.mode]||o.mode}
 // Acciones del jugador: se aplican y, si funcionan, se graban con el número de paso para la repetición.
 function applyAct(a){if(G.mode==='auto')return autoAct(a);const me=G.boards[a.p||0];
  if(G.mode==='sandbox'){
-  if(a.a==='place'){if(me.slots[a.i]||!UT[a.k])return false;me.slots[a.i]={k:a.k,rank:clamp(a.r|0,1,7),cd:.3,gen:6,pop:.4};return true}
+  if(a.a==='place'){if(me.slots[a.i]||!UT[a.k])return false;me.slots[a.i]={k:a.k,rank:clamp(a.r|0,1,PHV()?PH_MAX:7),cd:.3,gen:6,pop:.4};return true}
   if(a.a==='rm'){if(!me.slots[a.i])return false;me.slots[a.i]=null;return true}
   if(a.a==='spawn'){if(!BUGS[a.k])return false;spawnBug(me,a.k,G.hpBase*Math.pow(1.12,Math.max(0,G.wave-1)));return true}
   if(a.a==='wave'){nextWave();return true}
   if(a.a==='dew'){me.dew+=500;return true}}if(a.a==='mv'&&PHV()){const S=me.slots;if(a.i===a.j||!S[a.i]||S[a.j])return false;S[a.j]=S[a.i];S[a.i]=null;return true}
  if(a.a==='sw'&&PHV()){const S=me.slots;if(a.i===a.j||!S[a.i]||!S[a.j]||canMerge(me,a.i,a.j))return false;const tmp=S[a.i];S[a.i]=S[a.j];S[a.j]=tmp;return true}
- if(a.a==='s')return summon(me);if(a.a==='m')return merge(me,a.i,a.j);if(a.a==='p')return powerUp(me,a.k);if(a.a==='c')return useCmd(me);return false}
+ if(a.a==='sellU'&&V10())return pruneU(me,a.i);if(a.a==='s')return summon(me);if(a.a==='m')return merge(me,a.i,a.j);if(a.a==='p')return powerUp(me,a.k);if(a.a==='c')return useCmd(me);return false}
 function doAct(a){if(!G||G.replay||G.over||G.paused)return false;const ok=applyAct(a);if(ok)G.acts.push(Object.assign({f:G.f},a));return ok}
 const STEP=1/60;
 function step(){if(G.replay){const A=G.replay.acts;while(G.ai<A.length&&A[G.ai].f<=G.f){applyAct(A[G.ai]);G.ai++}}update(STEP);G.f++}
@@ -386,6 +405,8 @@ function endGame0(won){const g=G;if(g.over)return;g.over=true;let title,text='',
   else{title='Casi…';text='Los insectos ganaron esta vez. Prueba otra vez: fusiona pronto.'}}
  else if(g.mode==='campaign'){const ch=g.o.ch||0,C=CHAPTERS[ch];
   if(won){const first=g.lvl>=clr(ch);title=g.lvl===9?`¡Capítulo «${C.n}» completado!`:'¡Nivel superado!';text=`${C.ic} ${C.n} · Nivel ${g.lvl+1}: ${C.lv[g.lvl].n}`;
+   {const st=clamp(me.lives,1,3),S=(save.stars=save.stars||{})[ch]||(save.stars[ch]=[]);if(st>(S[g.lvl]||0))S[g.lvl]=st;text+=`<br><span style="font-size:26px;letter-spacing:4px">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</span>`;
+    save.mastery=save.mastery||{};if(chStars(ch)>=30&&!save.mastery[ch]){save.mastery[ch]=1;save.gems=(save.gems||0)+50;addChest('epico');unl.push(`🏅 ¡Maestría de «${C.n}» (30 ⭐)! +50 💎 y un cofre épico.`)}}
    if(first&&g.lvl===9&&CHAPTERS[ch+1])unl.push(`${CHAPTERS[ch+1].ic} ¡Nuevo capítulo: <b>${CHAPTERS[ch+1].n}</b>!`);
    if(first){setClr(ch,g.lvl+1);save.coins+=100*(ch+1);bonus=1;const un=C.lv[g.lvl].un;if(un&&!save.unlocked.includes(un)){save.unlocked.push(un);unl.push(`🌱 ¡Nueva planta: <b>${UT[un].n}</b>! ${UT[un].d} Añádela a tu mazo en «Mazo y mejoras».`)}}
    else save.coins+=25*(ch+1);if(g.lvl<9)next=()=>startCampaign(ch,g.lvl+1);else if(CHAPTERS[ch+1])next=()=>startCampaign(ch+1,0)}
