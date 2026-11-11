@@ -1,7 +1,7 @@
 // Brotes Rebeldes · Service worker: guarda una copia de todos los archivos para jugar sin conexión.
 // Con conexión siempre se carga la versión más nueva (y se actualiza la copia); sin conexión se usa la copia.
 // Si agregas archivos al juego (un .js nuevo o una imagen), añádelos a FILES y cambia VERSION.
-const VERSION='brotes-v1';
+const VERSION='brotes-v2';
 const FILES=['./','index.html','manifest.webmanifest',
  'js/00-idioma.js','js/idioma-en.js','js/idioma-en-fichas.js','js/01-base.js','js/02-audio.js','js/03-datos.js','js/04-progreso.js','js/05-arte-personajes.js',
  'js/06-arte-insectos.js','js/07-simulacion.js','js/08-render.js','js/09-interfaz.js','js/10-misiones.js','js/11-inicio.js',
