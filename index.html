@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Brotes Rebeldes</title>
+<meta name="description" content="Defensa con fusión: plantas contra insectos. Funciona sin conexión.">
+<meta name="theme-color" content="#1d3a22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brotes">
+<style>
+html,body{margin:0;height:100%;background:#0f1a14;font-family:"Segoe UI",system-ui,sans-serif;color:#fff;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#stage{position:absolute;left:50%;top:50%;width:960px;height:600px;transform-origin:0 0}
+canvas{display:block;width:960px;height:600px;border-radius:14px;box-shadow:0 10px 40px #000a}
+#ui{position:absolute;inset:0;pointer-events:none}
+#dlgTitle{margin:0;color:#ffcf4a;font-size:24px;text-shadow:0 2px 0 #5a2a00}#dlgTitle.hidden{display:none}
+.newtag{position:absolute;top:-7px;left:-7px;z-index:4;background:linear-gradient(#fff3a0,#ffc21a);color:#3a1a00;border:2px solid #fff;border-radius:8px;font-size:10px;font-weight:900;letter-spacing:.5px;padding:0 5px;line-height:15px;box-shadow:0 2px 4px #0008;pointer-events:none;animation:newp 1.6s ease-in-out infinite}
+.tab .newtag{top:3px;left:4px}.swap{position:relative}.swap .newtag{top:-9px;left:auto;right:-14px}
+@keyframes newp{50%{transform:scale(1.12)}}
+.synline{font-size:13px;color:#cfe0c8;max-width:860px;text-align:center;line-height:1.5}.synline b{color:#ffe680}.synline .on{color:#9bff7a;font-weight:700}
+.qtab.on{background:linear-gradient(#ffd66a,#f29a1c);color:#3a1a00;border-color:#8a4a0c}
+.qhead{color:#ffcf4a;font-weight:700;margin:6px 4px 0;font-size:15px}
+.qrow{display:flex;align-items:center;gap:12px}.qrow.ready{border-color:#ffcf4a;box-shadow:0 0 10px #ffcf4a55}.qrow.got{opacity:.6}
+.qrow .qi{font-size:26px;width:34px;text-align:center}.qrow .qt{flex:1;display:flex;flex-direction:column;gap:3px;text-align:left}
+.qrow .qt small{color:#cfe0c8;font-size:12px}.qrow .qr{font-size:13px;color:#ffe680;min-width:58px;text-align:right;line-height:1.3}
+.qbar{position:relative;height:14px;border-radius:7px;background:#0008;overflow:hidden;max-width:420px}.qbar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#9be06a,#3f9a2e)}
+.qbar em{position:relative;font-style:normal;font-size:11px;padding-left:8px;color:#fff;text-shadow:0 1px 2px #000}
+canvas{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+#dlg{z-index:57;background:rgba(0,0,0,.6)}
+.dlgbox{max-width:600px;margin:0 20px;padding:22px 26px;border-radius:16px;background:linear-gradient(#5a3a1c,#3a2410);border:3px solid #b8862a;box-shadow:0 10px 40px #000c;display:flex;flex-direction:column;gap:16px;align-items:center}
+#dlgMsg{font-size:19px;line-height:1.45;text-align:center;color:#fff3d8;white-space:pre-line}
+#rotate{display:none;position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 40%,#23402c,#0b140e);color:#ffe9a8;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;font-family:inherit}
+#rotate .ic{font-size:64px;animation:rot 2.4s ease-in-out infinite}
+#rotate b{font-size:24px}#rotate span{font-size:16px;color:#cfe0c8;max-width:320px}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (max-width:820px){#rotate{display:flex}}
+#toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:680px;width:max-content;padding:10px 16px;border-radius:12px;background:#24170bf2;border:2px solid #ffcf4a;color:#fff;font-size:15px;line-height:1.4;text-align:center;z-index:60;pointer-events:auto;box-shadow:0 6px 24px #000a;transition:opacity .35s;cursor:pointer}
+#toast.err{border-color:#ff6a5a;background:#3a120cf2}
+#toast.off{opacity:0;pointer-events:none}
+#crash{z-index:55}
+#crash pre{max-width:720px;max-height:150px;overflow:auto;background:#0009;border-radius:10px;padding:8px 12px;font-size:12px;color:#ffb0a0;white-space:pre-wrap;text-align:left;user-select:text;-webkit-user-select:text}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:auto;border-radius:14px;background:rgba(12,24,18,.78);backdrop-filter:blur(3px)}
+.hidden{display:none!important}
+h1{margin:0;font-size:62px;letter-spacing:3px;color:#ffcf4a;text-shadow:0 4px 0 #8a3a10,0 8px 24px #000c}
+h2{margin:0 0 6px;font-size:34px;color:#ffcf4a;text-shadow:0 3px 0 #8a3a10}
+.sub{margin:-2px 0 12px;color:#e8f0d8;font-size:17px;text-align:center;max-width:820px}
+button{font:inherit;font-weight:700;font-size:19px;color:#fff;background:linear-gradient(#5aa9ff,#2d6fd6);border:3px solid #173f85;border-radius:14px;padding:10px 20px;cursor:pointer;box-shadow:0 4px 0 #173f85;min-width:230px;text-shadow:0 2px 0 #0005}
+button:hover{filter:brightness(1.1)}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #173f85}
+button:disabled{filter:grayscale(1) brightness(.7);cursor:not-allowed}
+button.small{min-width:0;font-size:15px;padding:6px 12px}
+button.gold{background:linear-gradient(#ffd66a,#f29a1c);border-color:#8a4a0c;box-shadow:0 4px 0 #8a4a0c;color:#3a1a00;text-shadow:none}
+button.red{background:linear-gradient(#ff7a6a,#d6382d);border-color:#7a1a12;box-shadow:0 4px 0 #7a1a12}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.coins{position:absolute;top:14px;right:18px;font-size:20px;font-weight:700;color:#ffe680;background:#0008;padding:6px 14px;border-radius:20px}
+.back{position:absolute;top:14px;left:18px}
+.grid{display:grid;grid-template-columns:repeat(5,150px);gap:12px}
+.lvl{min-width:0;height:92px;font-size:14px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.lvl b{font-size:26px}
+.deck{display:grid;grid-template-columns:repeat(4,205px);gap:10px}
+.item{background:#0009;border:3px solid #3a5a48;border-radius:14px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;text-align:center;cursor:pointer}
+.item.on{border-color:#ffcf4a;background:#3a2a0899}
+.item.swap{border-color:#ff6a4a;box-shadow:0 0 12px #ff6a4a}
+.item canvas{width:64px;height:64px;box-shadow:none;border-radius:0}
+.item .nm{font-weight:700;font-size:15px;color:#ffe9a8}
+.item.locked{opacity:.4;cursor:default}
+.howto{max-width:780px;background:#000a;border-radius:14px;padding:14px 22px;font-size:15px;line-height:1.45;max-height:440px;overflow:auto}
+.howto b{color:#ffcf4a}
+#resText{font-size:19px;text-align:center;max-width:640px;line-height:1.5}
+.who{position:absolute;top:14px;left:18px;font-size:16px;font-weight:700;color:#e8f0d8;background:#0008;padding:6px 14px;border-radius:20px}
+.list{width:820px;max-height:330px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.rowi{display:flex;align-items:center;gap:10px;background:#0009;border:2px solid #3a5a48;border-radius:12px;padding:6px 10px;font-size:15px}
+.rowi span{flex:1}
+.opts{width:800px;max-height:470px;overflow:auto;background:#000a;border-radius:14px;padding:10px 18px;display:flex;flex-direction:column;gap:8px;font-size:16px}
+button:focus-visible,input:focus-visible,select:focus-visible,.cmd:focus-visible{outline:3px solid #fff;outline-offset:3px}
+input[type=range]{width:100px;accent-color:#ffcf4a}
+.opt .vl{width:38px;font-size:13px;color:#cfe}
+body.ts1 .sub,body.ts1 .howto,body.ts1 #resText,body.ts1 .unl,body.ts1 .prob,body.ts1 .st,body.ts1 .cmd>div,body.ts1 .tc>div,body.ts1 .rowi>span,body.ts1 .opt>span{zoom:1.1}
+body.ts2 .sub,body.ts2 .howto,body.ts2 #resText,body.ts2 .unl,body.ts2 .prob,body.ts2 .st,body.ts2 .cmd>div,body.ts2 .tc>div,body.ts2 .rowi>span,body.ts2 .opt>span{zoom:1.22}
+.opt{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opt>label{width:170px;color:#ffe9a8;font-weight:700}
+button.tog.on{background:linear-gradient(#ffd66a,#f29a1c);border-color:#8a4a0c;box-shadow:0 4px 0 #8a4a0c;color:#3a1a00;text-shadow:none}
+button.mid{min-width:190px}
+.rw{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.chip{background:#000a;border:2px solid #ffcf4a;border-radius:20px;padding:4px 14px;font-weight:700;font-size:17px}
+.xpbar{width:380px;height:14px;background:#0008;border:2px solid #3a5a48;border-radius:9px;overflow:hidden;margin:4px auto 0}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#7fff6a,#3fa04a)}
+.unl{background:#3a2a0899;border:2px solid #ffcf4a;border-radius:12px;padding:6px 12px;margin-top:6px;font-size:15px}
+.tabs{display:flex;gap:8px;margin-bottom:4px}
+.alb{display:grid;grid-template-columns:repeat(4,205px);gap:10px;max-height:400px;overflow:auto;padding:2px}
+.alb .item{cursor:default}
+.alb .st{font-size:12px;color:#cfe;line-height:1.35}
+.cmds{display:grid;grid-template-columns:repeat(2,390px);gap:12px}
+.cmd{background:#0009;border:3px solid #3a5a48;border-radius:14px;padding:10px 12px;display:flex;gap:12px;align-items:center;cursor:pointer;font-size:13px;line-height:1.4}
+.cmd.on{border-color:#ffcf4a;background:#3a2a0899}
+.cmd.locked{opacity:.45;cursor:default}
+.cmd .ic{font-size:46px;width:64px;text-align:center}
+.cmd b{color:#ffe9a8;font-size:16px}
+.invb{width:870px;max-height:395px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.ccards{display:grid;grid-template-columns:repeat(3,280px);gap:12px}
+.cc{background:#0009;border:3px solid #3a5a48;border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px}
+.cc canvas{width:150px!important;height:96px!important;box-shadow:none!important}
+.cc .n{font-weight:700;font-size:17px;color:#ffe9a8}
+.prob{font-size:12px;color:#cfe;text-align:left;line-height:1.4}
+.grow{display:flex;align-items:center;gap:10px;background:#0009;border:2px solid #3a5a48;border-radius:12px;padding:3px 10px;font-size:14px}
+.grow canvas,.skc canvas{width:48px!important;height:48px!important;box-shadow:none!important;border-radius:0!important}
+.grow .nm{width:150px;font-weight:700;color:#ffe9a8}
+button.slot{min-width:0;width:190px;font-size:13px;padding:5px 8px}
+.rels{display:grid;grid-template-columns:repeat(3,280px);gap:10px}
+.skrow{display:flex;align-items:center;gap:8px;background:#0009;border:2px solid #3a5a48;border-radius:12px;padding:3px 10px;font-size:13px}
+.skc{display:flex;flex-direction:column;align-items:center;border:2px solid transparent;border-radius:10px;padding:2px 6px;cursor:pointer;width:84px}
+.skc.on{border-color:#ffcf4a;background:#3a2a0899}.skc.lk{opacity:.35;cursor:default}
+.passg{display:grid;grid-template-columns:repeat(10,80px);gap:6px}
+.pl{background:#0009;border:2px solid #3a5a48;border-radius:10px;padding:3px;font-size:11px;text-align:center;height:98px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+.pl .ic{font-size:24px}.pl.got{border-color:#7fff6a}.pl.claim{border-color:#ffcf4a;cursor:pointer;background:#3a2a08cc;box-shadow:0 0 10px #ffcf4a88}.pl.done{opacity:.45}
+.tcards{display:grid;grid-template-columns:repeat(3,290px);gap:12px}
+.tc{background:#0009;border:3px solid #3a5a48;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.4}
+.tc .n{font-weight:700;font-size:18px;color:#ffe9a8}
+.tc .o{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.tc .o span{width:100%;color:#cfe;font-size:12px}
+.tc button.small{font-size:13px;padding:4px 8px}
+.edw{display:flex;gap:12px;width:910px;height:430px}
+.edl{width:200px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.edl button{min-width:0;font-size:14px;padding:6px 8px;text-align:left}
+.edr{flex:1;background:#000a;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;overflow:auto;font-size:14px}
+.wrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#0006;border:1px solid #3a5a48;border-radius:10px;padding:4px 8px}
+.chipb{background:#2a3a30;border:1px solid #5a7a68;border-radius:12px;padding:2px 8px;cursor:pointer;font-size:13px}.chipb:hover{border-color:#ff8a6a}
+select,input[type=number]{font:inherit;font-size:14px;padding:4px;border-radius:8px;background:#0f1a14;color:#fff;border:2px solid #3a5a48}
+input[type=number]{width:52px}
+.wrow select{width:140px}.wrow button.small{padding:3px 8px;font-size:13px}
+/* ===== Colección y tarjetas de estadísticas ===== */
+.dslots{display:flex;gap:8px;margin:2px 0}
+.colgrid{display:grid;grid-template-columns:repeat(8,104px);gap:6px;max-height:268px;overflow:auto;padding:4px}
+.ccard{position:relative;border:3px solid var(--tc);border-radius:12px;padding:2px 3px 3px;display:flex;flex-direction:column;align-items:center;cursor:pointer;font-size:10px;
+ background:linear-gradient(color-mix(in srgb,var(--tc) 35%,transparent),#000a 70%);color:#e8f0d8}
+.ccard:hover{filter:brightness(1.15)}
+.ccard canvas{width:76px!important;height:76px!important;box-shadow:none!important;border-radius:0!important}
+.ccard .nm{font-weight:700;font-size:11px;color:#fff;text-align:center;line-height:1.1;height:25px;overflow:hidden;display:flex;align-items:center}
+.ccard .ri{position:absolute;top:2px;left:4px;font-size:14px}.ccard .dk{position:absolute;top:2px;right:4px;font-size:12px;color:#7fff6a;font-weight:700}
+.ccard .lv{font-size:10px;opacity:.85}.ccard.lk canvas{filter:grayscale(1) brightness(.4)}.ccard.lk .nm{color:#9ab}
+.dslots .ccard{width:96px}.dslots .ccard canvas{width:70px!important;height:70px!important}
+.scard{display:flex;gap:14px;width:820px;height:500px;background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 40%,#10201a),#0b140f 60%);border:4px solid var(--tc);border-radius:20px;padding:14px;box-shadow:0 0 40px color-mix(in srgb,var(--tc) 50%,transparent)}
+.scard .sl{position:relative;width:260px;display:flex;flex-direction:column;align-items:center}
+.scard canvas{width:260px!important;height:300px!important;box-shadow:none!important;border-radius:14px!important;background:radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--tc) 45%,transparent),transparent 70%)}
+.tribbon{margin-top:-4px;background:var(--tc);color:#1a1a1a;font-weight:800;letter-spacing:3px;padding:4px 18px;border-radius:8px;font-size:15px;box-shadow:0 3px 0 #0006}
+.scard .sr{flex:1;display:flex;flex-direction:column;gap:5px;font-size:13px;overflow:auto}
+.scard .cn{font-size:28px;font-weight:800;color:#fff;text-shadow:0 3px 0 #0008}.scard .cr{color:#ffe9a8;font-weight:700}
+.scard .cq{font-style:italic;color:#cfe;opacity:.9}
+.srow{display:grid;grid-template-columns:150px 1fr 70px;align-items:center;gap:8px}
+.srow .bar{height:10px;background:#0008;border-radius:6px;overflow:hidden;border:1px solid #3a5a48}.srow .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--tc),#fff)}
+.srow b{text-align:right;color:#fff}
+.cbox{background:#0007;border:1px solid #3a5a48;border-radius:10px;padding:6px 10px;line-height:1.4}
+.cacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}.cacts button{min-width:0;font-size:14px;padding:7px 12px}
+/* ===== Comandantes ===== */
+.cgrid{display:grid;grid-template-columns:repeat(4,206px);gap:8px;max-height:380px;overflow:auto;padding:4px}
+.mcd{position:relative;display:flex;gap:8px;align-items:center;border:3px solid var(--tc);border-radius:14px;padding:5px 8px;cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 35%,transparent),#000a 70%);font-size:11px;line-height:1.3}
+.mcd:hover{filter:brightness(1.15)}.mcd canvas{width:64px!important;height:64px!important;box-shadow:none!important;border-radius:50%!important;flex:none}
+.mcd b{display:block;font-size:13px;color:#fff}.mcd .sel{position:absolute;top:3px;right:6px;color:#7fff6a;font-weight:800}.mcd.lk canvas{filter:grayscale(1) brightness(.45)}
+.abil{background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 28%,#0b140f),#0b140f 75%);border:2px solid var(--tc);border-radius:12px;padding:7px 10px;line-height:1.4}
+.abil h4{margin:0 0 3px;font-size:16px;color:#fff;display:flex;gap:8px;align-items:center}.abil .tag{font-size:11px;font-weight:800;letter-spacing:1px;color:#1a1a1a;background:var(--tc);border-radius:6px;padding:1px 6px}
+.abil .cdc{margin-left:auto;font-size:12px;background:#000a;border-radius:10px;padding:2px 8px;color:#cfe}.abil .nx{opacity:.7;font-size:12px;margin-top:3px}
+.pips{display:flex;gap:4px;align-items:center}.pip{width:20px;height:9px;border-radius:4px;background:#0008;border:1px solid var(--tc)}.pip.on{background:var(--tc)}
+/* ===== Tienda y premium ===== */
+.shopg{display:grid;grid-template-columns:repeat(5,164px);gap:10px;max-height:360px;overflow:auto;padding:4px}
+.sitem{background:#000a;border:3px solid #3a5a48;border-radius:14px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;line-height:1.3}
+.sitem .i{font-size:32px;line-height:1.1}.sitem b{font-size:15px;color:#ffe9a8}.sitem .lvp{color:#7fff6a;font-weight:700}
+.sitem.prem{border-color:#c06aff;background:linear-gradient(#2a1440cc,#000a)}.sitem.prem b{color:#f0c8ff}
+.sitem button{min-width:0;font-size:14px;padding:6px 12px;margin-top:auto}
+button.gem{background:linear-gradient(#d08aff,#8a3ad8);border-color:#4a1a7a;box-shadow:0 4px 0 #4a1a7a}
+.rchip.gem{color:#f0c8ff;border-color:#6a3a8a}
+.pl .pp{font-size:10px;color:#e8c0ff;border-top:1px dashed #8a5ab0;width:100%;padding-top:2px}
+.pl.pclaim{border-color:#c06aff;cursor:pointer;box-shadow:0 0 10px #c06aff}
+/* ===== Inicio estilo lobby (diseño propio) ===== */
+#menu{justify-content:flex-start;background:linear-gradient(rgba(10,20,14,.8),rgba(10,20,14,.15) 24%,rgba(10,20,14,.05) 55%,rgba(10,20,14,.7));backdrop-filter:none}
+.topbar{position:absolute;top:10px;left:12px;right:12px;display:flex;align-items:center;gap:8px}
+.pchip{display:flex;align-items:center;gap:8px;min-width:0;background:#000b;border:2px solid #3a5a48;border-radius:26px;padding:3px 16px 3px 4px;box-shadow:none;font-size:15px;text-align:left}
+.pchip .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(#5ac060,#2f8a3a);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #ffcf4a}
+.pchip b{display:block;color:#ffe9a8;font-size:15px}.pxp{display:flex;align-items:center;gap:6px;font-size:12px;color:#cfe;font-weight:700}
+.pxp .xpbar{width:90px;height:8px;margin:0;border-width:1px}
+.res{margin-left:auto;display:flex;gap:8px;align-items:center}
+.rchip{background:#000b;border:2px solid #3a5a48;border-radius:20px;padding:5px 14px;font-weight:700;color:#ffe680;font-size:17px}
+.ibtn{min-width:0;width:42px;height:42px;padding:0;border-radius:50%;font-size:19px}
+.ltitle{margin-top:64px;font-size:46px}
+.side{position:absolute;top:118px;display:flex;flex-direction:column;gap:12px}.side.l{left:14px}.side.r{right:14px}
+.sbtn{position:relative;min-width:0;width:84px;height:74px;padding:4px;border-radius:16px;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+ background:linear-gradient(#336b4c,#1d3a2c);border-color:#0e2418;box-shadow:0 4px 0 #0e2418}
+.sbtn .i,.tab .i{font-size:26px;line-height:1.1}
+.badge{position:absolute;top:-7px;right:-7px;background:#ff4a5a;color:#fff;border-radius:12px;min-width:22px;height:22px;font-size:13px;line-height:19px;padding:0 5px;border:2px solid #fff;display:none}
+.badge.on{display:block}
+.playbox{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.modecard{background:#000c;border:2px solid #ffcf4a;border-radius:16px;padding:5px 22px;text-align:center;min-width:300px}
+.modecard b{font-size:21px;color:#ffe9a8}.modecard div{font-size:13px;color:#cfe}
+.playbtn{min-width:330px;font-size:34px;padding:12px 20px;border-radius:22px;box-shadow:0 6px 0 #8a4a0c,0 0 24px #ffcf4a66}
+.swap{background:linear-gradient(#336b4c,#1d3a2c);border-color:#0e2418;box-shadow:0 3px 0 #0e2418}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:68px;display:flex;background:linear-gradient(#1d3326,#0b140f);border-top:2px solid #3a5a48;border-radius:0 0 14px 14px;overflow:hidden}
+.tab{position:relative;flex:1;min-width:0;background:none;border:none;box-shadow:none;border-radius:0;padding:4px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfe;text-shadow:none}
+.tab:active{transform:none;box-shadow:none}.tab:hover{background:#ffffff0d;filter:none}
+.tab.on{background:linear-gradient(#ffcf4a33,#ffcf4a08);color:#ffe14a;box-shadow:inset 0 3px 0 #ffcf4a}
+.sbtn.locked,.tab.locked{filter:grayscale(1) brightness(.6)}
+.sbtn.locked::after,.tab.locked::after{content:'🔒';position:absolute;top:2px;right:6px;font-size:13px}
+.mgrid{display:grid;grid-template-columns:repeat(3,276px);gap:10px}
+.mcard{position:relative;display:flex;gap:10px;align-items:center;text-align:left;min-width:0;padding:8px 12px;font-size:12px;font-weight:400;background:#000a;border:3px solid #3a5a48;box-shadow:none;border-radius:14px;line-height:1.35}
+.mcard .i{font-size:36px;width:44px;text-align:center}.mcard b{font-size:17px;color:#ffe9a8;display:block}.mcard em{font-style:normal;color:#7fff6a;font-weight:700}
+.mcard.on{border-color:#ffcf4a;background:#3a2a08aa}.mcard:disabled{opacity:.5}
+@keyframes popin{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.popin{animation:popin .35s ease-out both}
+input[type=text]{font:inherit;font-size:17px;padding:7px 10px;border-radius:10px;border:2px solid #3a5a48;background:#0f1a14;color:#fff;width:220px;user-select:text;-webkit-user-select:text}
+/* ===== Estilo "bosque de fantasía": inicio y todos los paneles ===== */
+.screen{background:radial-gradient(ellipse at 50% 35%,rgba(34,58,36,.82),rgba(8,18,10,.94));box-shadow:inset 0 0 0 3px #b8862a,inset 0 0 0 6px #00000066,inset 0 0 80px #000b}
+h2{font-size:36px;font-weight:900;letter-spacing:1px;background:linear-gradient(#fff8d0,#f6c84a 55%,#c07a10);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.5px #3a2208;text-shadow:none;filter:drop-shadow(0 3px 0 #3a2208) drop-shadow(0 6px 8px #000a)}
+button{background:linear-gradient(#4a8a72,#24564a);border:3px solid #d8a840;box-shadow:0 4px 0 #2a1a06,inset 0 2px 0 #ffffff40,inset 0 -3px 0 #0004}
+button:active{box-shadow:0 1px 0 #2a1a06}
+button.gold,button.tog.on{background:linear-gradient(#ffe07a,#f29a1c);border-color:#fff0b0;box-shadow:0 4px 0 #7a3a08,inset 0 2px 0 #fff8,inset 0 -3px 0 #0003}
+button.red{background:linear-gradient(#ff7a6a,#c8302a);border-color:#ffc8a0;box-shadow:0 4px 0 #5a1208,inset 0 2px 0 #fff5}
+button.gem{border-color:#f0c8ff}
+.coins,.who,.chip{background:linear-gradient(#4e5a50,#2a3430);border:2px solid #d8a840;border-radius:12px;box-shadow:0 3px 0 #1a1208,inset 0 2px 0 #ffffff22}
+.howto,.opts{background:linear-gradient(#3a2a18f2,#1e140af2);border:3px solid #b8862a;box-shadow:inset 0 0 0 2px #00000066,0 6px 14px #000a}
+.item,.rowi,.mcard,.sitem,.cmd,.cc,.pl{background:linear-gradient(#3a2c1cee,#1e160cee);border-color:#8a6a34}
+.xpbar{border-color:#b8862a}
+/* --- inicio --- */
+#menu{background:none}
+.ltitle{position:relative;margin-top:50px;padding:6px 38px 10px;font-size:40px;line-height:.94;letter-spacing:2px;text-align:center;background:linear-gradient(#6a5a48,#3a2e22);border:4px solid #e0b040;border-radius:24px;
+ box-shadow:0 6px 0 #2a1a06,0 12px 24px #000a,inset 0 0 0 3px #00000055,inset 0 3px 0 #ffffff30;color:inherit;text-shadow:none}
+.ltitle span{background:linear-gradient(#fff6c0,#f6c040 50%,#b8700c);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px #3a2208;filter:drop-shadow(0 4px 0 #3a2208)}
+.ltitle::before,.ltitle::after{content:'🌿';position:absolute;top:-18px;font-size:36px}
+.ltitle::before{left:-20px;transform:rotate(-30deg)}.ltitle::after{right:-20px;transform:scaleX(-1) rotate(-30deg)}
+.pchip{background:linear-gradient(#4e5a50,#2a3430);border:3px solid #d8a840;border-radius:16px;box-shadow:0 3px 0 #1a1208,inset 0 2px 0 #ffffff22}
+.pchip .av{border-color:#ffd860;background:radial-gradient(#7ad060,#2a7a34)}
+.rchip{background:linear-gradient(#4e5a50,#2a3430);border:2px solid #d8a840;border-radius:12px;box-shadow:0 3px 0 #1a1208,inset 0 2px 0 #ffffff22}
+.ibtn{border-radius:12px;background:linear-gradient(#5aa0ff,#2a5ad0);border-color:#d8e8ff}
+.side{top:112px}
+.sbtn{width:86px;height:78px;border-radius:14px;background:linear-gradient(#5a6a66,#33403c);border:3px solid #c8963a;box-shadow:0 4px 0 #1a1208,inset 0 0 0 2px #00000055,inset 0 3px 0 #ffffff26;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+.sbtn::before{content:'🌿';position:absolute;left:-10px;top:-12px;font-size:20px;transform:rotate(-20deg);pointer-events:none}
+.side.r .sbtn::before{left:auto;right:-10px;transform:scaleX(-1) rotate(-20deg)}
+.modecard{position:relative;background:linear-gradient(#2e7a3a,#16481e);border:3px solid #e0b040;border-radius:12px;box-shadow:0 4px 0 #1a1208,inset 0 2px 0 #ffffff30}
+.modecard::before,.modecard::after{content:'◆';position:absolute;top:50%;transform:translateY(-52%);color:#ffd860;font-size:20px;text-shadow:0 0 6px #ffcf4a}
+.modecard::before{left:-14px}.modecard::after{right:-14px}
+.playbtn{position:relative;background:linear-gradient(#ffd060,#f08a10 70%,#c85a00);border:4px solid #fff0b0;outline:3px solid #8a5a10;box-shadow:0 6px 0 #6a3008,0 0 26px #ffcf4a88,inset 0 3px 0 #fff9;color:#4a1a00;font-weight:900}
+.playbtn::before,.playbtn::after{content:'';position:absolute;top:50%;width:18px;height:18px;transform:translateY(-50%) rotate(45deg);border:2px solid #fff0b0;box-shadow:0 0 8px #fff8}
+.playbtn::before{left:-26px;background:linear-gradient(135deg,#ff8aa0,#c8102a)}.playbtn::after{right:-26px;background:linear-gradient(135deg,#9ad8ff,#1a5ad0)}
+.swap{background:linear-gradient(#5a6a66,#33403c);border-color:#c8963a}
+.tabbar{height:72px;gap:6px;padding:7px 8px;box-sizing:border-box;overflow:visible;background:linear-gradient(#3a4a46,#1a2422);border-top:3px solid #c8963a}
+.tab{background:linear-gradient(#2e6a5a,#173a32);border:2px solid #c8963a;border-radius:10px;box-shadow:inset 0 2px 0 #ffffff22,0 3px 0 #0a1210;text-transform:uppercase;font-size:12px;color:#f0f8f0}
+.tab.on{background:linear-gradient(#3a8a6a,#1e5040);border:3px solid #ffd860;box-shadow:0 0 14px #ffcf4a99,inset 0 2px 0 #fff4;color:#ffe680}
+.tabbar::before,.tabbar::after{content:'🌿';position:absolute;top:-20px;font-size:28px}
+.tabbar::before{left:-8px;transform:rotate(-30deg)}.tabbar::after{right:-8px;transform:scaleX(-1) rotate(-30deg)}
+/* ===== Barra inferior: placas de piedra con marco dorado, remaches, medallón y pestaña activa elevada ===== */
+.tabbar{height:78px;gap:8px;padding:8px 12px 7px;background:
+ linear-gradient(#00000000 0,#00000000 calc(100% - 5px),#0006 100%),
+ repeating-linear-gradient(90deg,#00000014 0 2px,transparent 2px 46px),
+ linear-gradient(#4a3a26,#2a1e12);border-top:4px solid #d8a840;box-shadow:inset 0 3px 0 #ffffff22,0 -6px 14px #0008}
+.tab{overflow:hidden;border:none;border-radius:12px;padding:3px 2px 5px;gap:1px;font-size:12px;font-weight:900;letter-spacing:1px;color:#ffe9a8;
+ text-shadow:0 1px 0 #3a2208,1px 0 0 #3a2208,-1px 0 0 #3a2208,0 -1px 0 #3a2208,0 3px 4px #000c;
+ background:
+  radial-gradient(circle at 7px 7px,#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 7px) 7px,#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at 7px calc(100% - 7px),#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 7px) calc(100% - 7px),#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(ellipse at 50% 0%,#ffffff2a,transparent 60%),
+  linear-gradient(#3e7a68,#1d4a40 60%,#14342c);
+ box-shadow:inset 0 0 0 2px #2a1a06,inset 0 0 0 4px #e0b040,inset 0 0 0 5px #7a5410,inset 0 6px 10px #ffffff18,inset 0 -8px 12px #0006,0 4px 0 #120a04,0 6px 10px #0008;
+ transition:transform .15s,filter .15s}
+.tab .i{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;font-size:21px;line-height:1;
+ background:radial-gradient(circle at 35% 30%,#5aa890,#1e4a40 70%);box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #e0b040,0 3px 4px #000a,inset 0 2px 3px #ffffff40,inset 0 -3px 4px #0006;transition:box-shadow .15s,transform .15s}
+.tab:hover{transform:translateY(-3px);filter:brightness(1.12)}
+.tab:hover .i{box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #ffe680,0 0 12px #ffe68099,inset 0 2px 3px #ffffff40}
+.tab.on{transform:translateY(-10px) scale(1.07);z-index:2;color:#fff8d0;border:none;
+ background:
+  radial-gradient(circle at 7px 7px,#ffffff 0 1.6px,#a8700a 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 7px) 7px,#ffffff 0 1.6px,#a8700a 2.6px,transparent 3.4px),
+  radial-gradient(circle at 7px calc(100% - 7px),#ffffff 0 1.6px,#a8700a 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 7px) calc(100% - 7px),#ffffff 0 1.6px,#a8700a 2.6px,transparent 3.4px),
+  radial-gradient(ellipse at 50% 0%,#fff6c055,transparent 65%),
+  linear-gradient(#5aa86a,#2a7040 55%,#1a4a28);
+ box-shadow:inset 0 0 0 2px #2a1a06,inset 0 0 0 4px #ffe070,inset 0 0 0 5px #a8700a,inset 0 6px 12px #ffffff30,0 6px 0 #120a04,0 0 22px #ffcf4acc}
+.tab.on .i{width:40px;height:40px;font-size:24px;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d8962a 70%);animation:tabPulse 1.6s ease-in-out infinite}
+.tab.on::before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,#ffffff40 45%,transparent 60%);background-size:250% 100%;animation:tabShine 2.8s linear infinite;pointer-events:none;border-radius:12px}
+.tab.on::after{content:'◆';position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:13px;color:#fff;text-shadow:0 0 6px #ff4a6a,0 0 10px #ff4a6a;pointer-events:none}
+.tab.locked{filter:grayscale(.9) brightness(.62)}
+@keyframes tabPulse{0%,100%{box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #fff0b0,0 0 8px #ffcf4a99,inset 0 2px 3px #fff8}50%{box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #fff0b0,0 0 18px #ffcf4a,inset 0 2px 3px #fff8}}
+@keyframes tabShine{from{background-position:150% 0}to{background-position:-100% 0}}
+/* ===== Botones laterales: misma placa de piedra con marco dorado, remaches y medallón ===== */
+.sbtn{width:88px;height:84px;padding:4px 2px 6px;gap:2px;border:none;border-radius:14px;font-size:11px;font-weight:900;letter-spacing:.6px;color:#ffe9a8;overflow:visible;
+ text-shadow:0 1px 0 #3a2208,1px 0 0 #3a2208,-1px 0 0 #3a2208,0 -1px 0 #3a2208,0 3px 4px #000c;
+ background:
+  radial-gradient(circle at 8px 8px,#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 8px) 8px,#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at 8px calc(100% - 8px),#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(circle at calc(100% - 8px) calc(100% - 8px),#fff4b0 0 1.6px,#8a5a10 2.6px,transparent 3.4px),
+  radial-gradient(ellipse at 50% 0%,#ffffff2a,transparent 60%),
+  linear-gradient(#5a6a62,#33403a 60%,#222c28);
+ box-shadow:inset 0 0 0 2px #2a1a06,inset 0 0 0 4px #e0b040,inset 0 0 0 5px #7a5410,inset 0 6px 10px #ffffff18,inset 0 -8px 12px #0006,0 4px 0 #120a04,0 6px 10px #0008;
+ transition:transform .15s,filter .15s}
+.sbtn .i{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;font-size:23px;line-height:1;
+ background:radial-gradient(circle at 35% 30%,#5aa890,#1e4a40 70%);box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #e0b040,0 3px 4px #000a,inset 0 2px 3px #ffffff40,inset 0 -3px 4px #0006;transition:box-shadow .15s}
+.sbtn:hover{transform:translateY(-3px);filter:brightness(1.12)}
+.sbtn:hover .i{box-shadow:0 0 0 2px #2a1a06,0 0 0 4px #ffe680,0 0 12px #ffe68099,inset 0 2px 3px #ffffff40}
+.sbtn:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #2a1a06,inset 0 0 0 4px #e0b040,inset 0 0 0 5px #7a5410,0 1px 0 #120a04}
+.sbtn::before{z-index:2}
+.sbtn .badge{z-index:3}
+.side{gap:10px}
+.sbtn.locked{filter:grayscale(.9) brightness(.62)}
+</style>
+</head>
+<body>
+<div id="rotate" role="alert"><div class="ic">📱</div><b>Gira el teléfono</b><span>Brotes Rebeldes se juega en horizontal.</span><button class="gold" onclick="toggleFullscreen()">⛶ Pantalla completa</button></div>
+<div id="stage">
+<canvas id="cv"></canvas>
+<div id="ui">
+  <div class="screen hidden" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgMsg"><div class="dlgbox"><h3 id="dlgTitle" class="hidden"></h3><div id="dlgMsg"></div><div class="row"><button id="dlgOk" class="gold">Aceptar</button><button id="dlgNo">Cancelar</button></div></div></div>
+  <div id="toast" class="off" role="status" aria-live="polite" onclick="this.classList.add('off')"></div>
+  <div class="screen hidden" id="crash" role="alertdialog" aria-labelledby="crashT">
+    <h2 id="crashT">¡Ups! Algo falló</h2>
+    <div class="sub">La partida se detuvo por un error del juego. Tu progreso guardado está a salvo.</div>
+    <pre id="crashMsg"></pre>
+    <div class="row"><button class="gold" onclick="crashMenu()">🏠 Volver al menú</button><button onclick="crashCopy()">📋 Copiar detalles</button></div>
+  </div>
+  <div class="screen" id="menu">
+    <div class="topbar">
+      <button class="pchip" onclick="showOptions()" title="Perfil y opciones"><span class="av">🌱</span><span><b id="pName">Jardín</b><span class="pxp"><span id="pLv">Nv 1</span><span class="xpbar" id="pXp"><i></i></span></span></span></button>
+      <div class="res"><span class="rchip">💰 <span class="coinv">0</span></span><span class="rchip gem">💎 <span class="gemv">0</span></span><span class="rchip">🏆 <span class="trov">0</span></span>
+        <button class="ibtn" onclick="show('howto')" title="Cómo jugar">❓</button><button class="ibtn" onclick="showOptions()" title="Opciones">⚙️</button></div>
+    </div>
+    <h1 class="ltitle"><span>BROTES<br>REBELDES</span></h1>
+    <div class="side l">
+      <button class="sbtn" onclick="showNews()"><span class="i">📰</span>Avisos<span class="badge" id="bNews"></span></button>
+      <button class="sbtn" data-f="pass" data-g="pass" onclick="showPass()"><span class="i">🎟️</span>Pase<span class="badge" id="bPass"></span></button>
+      <button class="sbtn" data-f="replays" data-g="replays" onclick="showReplays()"><span class="i">🎬</span>Repeticiones</button>
+      <button class="sbtn" data-g="shop" onclick="showShop('up')"><span class="i">🛒</span>Tienda</button>
+    </div>
+    <div class="side r">
+      <button class="sbtn" data-g="quests" onclick="showQuests()"><span class="i">📜</span>Misiones<span class="badge" id="bQuest"></span></button>
+      <button class="sbtn" data-f="event" data-g="event" onclick="showEvent()"><span class="i">🎪</span>Evento<span class="badge" id="bEvent"></span></button>
+      <button class="sbtn" data-f="inv" data-g="inv" onclick="showInv('chests')"><span class="i">🎁</span>Cofres<span class="badge" id="bChest"></span></button>
+      <button class="sbtn" data-f="daily" onclick="startDaily()"><span class="i">📅</span>Diario<span class="badge" id="bDaily"></span></button>
+    </div>
+    <div class="playbox">
+      <div class="modecard"><b id="mName">Escalera</b><div id="mInfo"></div></div>
+      <button class="gold playbtn" id="playBtn" onclick="playMain()">▶ JUGAR</button>
+      <button class="small swap" data-g="modes" onclick="showModes()">⇄ Cambiar modo</button>
+    </div>
+    <div class="tabbar">
+      <button class="tab" data-f="deck" data-g="deck" onclick="showDeck()"><span class="i">🃏</span>Mazo</button>
+      <button class="tab" data-f="cmd" data-g="cmds" onclick="showCmds()"><span class="i">🎖️</span>Comandante</button>
+      <button class="tab on" onclick="show('menu')"><span class="i">🏡</span>Inicio</button>
+      <button class="tab" data-f="album" data-g="album" onclick="showAlbum('plants')"><span class="i">📖</span>Álbum</button>
+      <button class="tab" data-g="taller" onclick="showTaller()"><span class="i">🧰</span>Taller</button>
+    </div>
+  </div>
+  <div class="screen hidden" id="replays">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Repeticiones</h2>
+    <div class="sub">Se guardan tus últimas 20 partidas. Cada una tiene una semilla: con la misma semilla, las oleadas y el azar son idénticos.</div>
+    <div class="list" id="repList"></div>
+    <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="seedIn" placeholder="Semilla (número)" inputmode="numeric"><button class="small gold" onclick="playSeed()">♾️ Supervivencia con esta semilla</button></div>
+  </div>
+  <div class="screen hidden" id="options">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Opciones</h2>
+    <div class="opts">
+      <div class="opt"><label>Nombre</label><input type="text" id="optName" maxlength="16"><button class="small" onclick="saveName('optName')">Guardar</button></div>
+      <div class="opt"><label>Dificultad</label><span id="optDiff" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Velocidad inicial</label><span id="optSpd" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Perfil</label><span id="optProf" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Idioma · Language</label><span class="row langrow" style="justify-content:flex-start"><button class="small tog" onclick="setLang('es')">Español</button><button class="small tog" onclick="setLang('en')">English</button></span></div>
+      <div class="opt"><label>App</label><span class="row" style="justify-content:flex-start;align-items:center"><button class="small gold hidden" id="optInstall" onclick="installApp()">📲 Instalar app</button><span class="vl" id="optInstallInfo"></span></span></div>
+      <div class="opt"><label>Créditos</label><button class="small" onclick="showCredits()">📜 Ver créditos</button></div>
+      <div class="opt"><label>Pantalla</label><button class="small" onclick="toggleFullscreen()">⛶ Pantalla completa</button></div>
+      <div class="opt"><label>Sonido</label><span class="row" style="justify-content:flex-start;gap:6px;align-items:center">General <input type="range" id="vVol" min="0" max="100" oninput="setVol('vol',this)"><span class="vl" id="vVolL"></span>
+        Música <input type="range" id="vMus" min="0" max="100" oninput="setVol('mus',this)"><span class="vl" id="vMusL"></span>
+        Efectos <input type="range" id="vFx" min="0" max="100" oninput="setVol('fx',this)"><span class="vl" id="vFxL"></span></span></div>
+      <div class="opt"><label>Accesibilidad</label><button class="small tog" id="optFlash" onclick="toggleFlash()">Reducir destellos</button><button class="small tog" id="optCb" onclick="toggleCb()">Formas para daltonismo</button></div>
+      <div class="opt"><label>Estilo de personajes</label><span id="optArt" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Tamaño de texto</label><span id="optTs" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Escenario</label><span id="optBio" class="row" style="justify-content:flex-start"></span></div>
+      <div class="opt"><label>Teclado</label><span style="flex:1;font-size:13px;line-height:1.45">Menús: Tab y Enter; Escape vuelve. En partida: flechas o WASD mueven el cursor, Enter/F elige y fusiona, Espacio planta, 1–9 potencia, Q comandante, V velocidad, Escape pausa. Auto-batalla: 1–5 compra, R cambia la tienda, X vende, G ¡listo!. Jardín libre: T tipo, N oleada, X modo quitar.</span></div>
+      <div class="opt"><label>Guardado</label><button class="small" onclick="exportSave()">⬇ Exportar</button><button class="small" onclick="document.getElementById('impFile').click()">⬆ Importar</button><button class="small red" onclick="resetSave()">🗑 Borrar progreso</button><input type="file" id="impFile" accept=".json,application/json" class="hidden" onchange="importSave(this)"></div>
+      <div class="opt"><label>Estadísticas</label><span id="optStats" style="flex:1;font-size:14px;line-height:1.45"></span></div>
+    </div>
+  </div>
+  <div class="screen hidden" id="album">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Álbum</h2>
+    <div class="tabs"><button class="small tog" id="albP" onclick="showAlbum('plants')">🌱 Plantas</button><button class="small tog" id="albI" onclick="showAlbum('bugs')">🐞 Insectos</button></div>
+    <div class="alb" id="albGrid"></div>
+  </div>
+  <div class="screen hidden" id="cmds">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2 style="margin:0">Jardineros Comandantes</h2>
+    <div class="sub" style="margin:0">Tu comandante te acompaña en cada partida: habilidad activa (botón o tecla <b>Q</b>) y pasiva. Súbelo de nivel para mejorar su habilidad.</div>
+    <div class="tabs" id="cmdFilter"></div>
+    <div class="cgrid" id="cmdGrid"></div>
+  </div>
+  <div class="screen hidden" id="cmdcard">
+    <div class="scard" id="mcard"><div class="sl"><canvas id="cmdCv" width="520" height="600"></canvas><div class="tribbon" id="mTier"></div></div><div class="sr" id="cmInfo"></div></div>
+  </div>
+  <div class="screen hidden" id="inv">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <div class="coins">💰 <span class="coinv">0</span></div>
+    <h2>Inventario</h2>
+    <div class="tabs" id="invTabs"></div>
+    <div class="invb" id="invBody"></div>
+  </div>
+  <div class="screen hidden" id="chest">
+    <h2 id="chestT">Cofre</h2>
+    <canvas id="chestCv" width="640" height="400" style="width:320px;height:200px;box-shadow:none;border-radius:0"></canvas>
+    <div id="chestRes" style="display:flex;flex-direction:column;align-items:center;gap:4px;min-height:40px"></div>
+    <div class="row" id="chestBtns" style="margin-top:6px"><button class="gold mid" id="chestMore">Abrir otro</button><button class="mid" onclick="showInv('chests')">🎒 Inventario</button></div>
+  </div>
+  <div class="screen hidden" id="pass">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <div class="coins">💰 <span class="coinv">0</span> · 💎 <span class="gemv">0</span></div>
+    <h2>Pase de temporada</h2>
+    <div class="sub" id="passInfo" style="margin:0"></div>
+    <div id="passPrem" class="row" style="font-size:14px;margin:2px 0 4px;align-items:center"></div>
+    <div class="xpbar" id="passBar" style="margin:0 0 6px"><i></i></div>
+    <div class="passg" id="passGrid"></div>
+    <div class="row" style="margin-top:8px;align-items:center"><button class="small gold" id="passAll" onclick="claimAllPass()">Reclamar todo</button><span id="passMsg" style="font-size:14px;max-width:640px"></span></div>
+  </div>
+  <div class="screen hidden" id="shop">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <div class="coins">💰 <span class="coinv">0</span> · 💎 <span class="gemv">0</span></div>
+    <h2>Tienda</h2>
+    <div class="row" id="shopTabs"></div>
+    <div class="shopg" id="shopGrid"></div>
+    <div class="sub" id="shopMsg" style="min-height:22px;margin:4px 0 0;font-size:14px;max-width:820px"></div>
+  </div>
+  <div class="screen hidden" id="event">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2 id="evT">Evento</h2>
+    <div class="howto" id="evBody" style="max-width:640px;text-align:center;font-size:17px"></div>
+    <button class="gold" onclick="startEvent()">▶ Jugar el evento</button>
+    <div class="sub" id="evNext" style="font-size:14px;margin-top:6px"></div>
+  </div>
+  <div class="screen hidden" id="modes">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Elige un modo</h2>
+    <div class="mgrid" id="modeGrid"></div>
+  </div>
+  <div class="screen hidden" id="taller">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>🧰 Taller</h2>
+    <div class="sub" style="margin:0">Herramientas para experimentar. Estos modos no dan premios.</div>
+    <div class="tcards">
+      <div class="tc"><div class="n">🌼 Jardín libre</div><div>Coloca cualquier planta y nivel gratis, invoca cualquier insecto (también jefes) y prueba combinaciones.</div>
+        <div class="o"><span>Rocío inicial</span><div id="sbDew" class="o"></div></div><div class="o"><span>Vidas</span><div id="sbInf" class="o"></div></div>
+        <div class="o"><span>Oleadas</span><div id="sbAuto" class="o"></div></div><div class="o"><span>Vida de los insectos</span><div id="sbHp" class="o"></div></div>
+        <button class="gold small" style="margin-top:auto" onclick="startSandbox()">▶ Empezar</button></div>
+      <div class="tc"><div class="n">📝 Oleadas propias</div><div>Arma tus propias listas de oleadas: qué insectos llegan, cuántos y en qué orden. Guárdalas, juégalas y expórtalas a un archivo para compartirlas.</div>
+        <div id="tcSets" style="color:#cfe"></div><button class="gold small" style="margin-top:auto" onclick="showEditor()">✏️ Abrir el editor</button></div>
+      <div class="tc"><div class="n">👫 Duelo local</div><div>Dos personas en la misma computadora, cada una con su jardín. Ambas usan tu mazo actual, sin mejoras permanentes (partida justa). También se puede jugar con el mouse.</div>
+        <div class="o"><span>Nombre del jugador 2</span><input type="text" id="p2Name" maxlength="16" style="width:180px"></div>
+        <div style="font-size:12px;line-height:1.5"><b style="color:#ffe14a">Jugador 1:</b> mover WASD · plantar E · elegir/fusionar F · potenciar 1–5<br><b style="color:#4fd8ff">Jugador 2:</b> mover flechas · plantar Shift derecho · elegir/fusionar Enter · potenciar 6–0</div>
+        <button class="gold small" style="margin-top:auto" onclick="startVersus()">▶ Empezar duelo</button></div>
+    </div>
+  </div>
+  <div class="screen hidden" id="editor">
+    <button class="small back" onclick="showTaller()">← Taller</button>
+    <h2>📝 Editor de oleadas</h2>
+    <div class="edw"><div class="edl"><div id="edSets" style="display:flex;flex-direction:column;gap:6px"></div><button class="small" onclick="newSet()">＋ Nuevo conjunto</button>
+      <button class="small" onclick="document.getElementById('edFile').click()">⬆ Importar archivo</button><input type="file" id="edFile" accept=".json,application/json" class="hidden" onchange="importSet(this)"></div>
+      <div class="edr" id="edMain"></div></div>
+  </div>
+  <div class="screen hidden" id="quests">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Misiones y logros</h2>
+    <div class="row"><button class="small qtab" data-t="mis" onclick="showQuests('mis')">📜 Misiones</button><button class="small qtab" data-t="ach" onclick="showQuests('ach')">🏅 Logros</button></div>
+    <div class="list" id="qList"></div>
+  </div>
+  <div class="screen hidden" id="news">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Avisos</h2>
+    <div class="list" id="newsList"></div>
+  </div>
+  <div class="screen hidden" id="name">
+    <h1 style="font-size:46px">¡Te damos la bienvenida!</h1>
+    <div class="sub">¿Cómo se llama quien cuida este jardín?</div>
+    <input type="text" id="nameIn" maxlength="16" placeholder="Tu nombre">
+    <button class="gold" onclick="saveName('nameIn',true)">Empezar</button>
+    <div class="row langrow"><button class="small tog" onclick="setLang('es')">🇪🇸 Español</button><button class="small tog" onclick="setLang('en')">🇬🇧 English</button></div>
+  </div>
+  <div class="screen hidden" id="levels">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <div class="coins">💰 <span class="coinv">0</span></div>
+    <h2>Campaña</h2>
+    <div class="tabs" id="chTabs"></div>
+    <div class="grid" id="lvlGrid"></div>
+  </div>
+  <div class="screen hidden" id="deck">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <div class="coins">💰 <span class="coinv">0</span></div>
+    <h2 style="margin:0">Mazo y colección</h2>
+    <div class="tabs" id="deckTabs"></div>
+    <div class="dslots" id="deckSlots"></div>
+    <div class="synline" id="deckSyn"></div>
+    <div class="tabs" id="colFilter" style="margin-top:2px"></div>
+    <div class="colgrid" id="deckGrid"></div>
+  </div>
+  <div class="screen hidden" id="card">
+    <div class="scard" id="scard">
+      <div class="sl"><canvas id="cardCv" width="520" height="600"></canvas><div class="tribbon" id="cTier"></div></div>
+      <div class="sr" id="cInfo"></div>
+    </div>
+  </div>
+  <div class="screen hidden" id="howto">
+    <button class="small back" onclick="show('menu')">← Volver</button>
+    <h2>Cómo jugar</h2>
+    <div class="howto">
+      <p><b>Plantar:</b> pulsa <b>Plantar</b> (o la barra espaciadora) para poner una planta al azar de tu mazo en una maceta libre. Cuesta 💧 rocío, y cada planta nueva cuesta 10 más que la anterior. Ganas rocío al eliminar insectos y al empezar cada oleada.</p>
+      <p><b>Fusionar:</b> arrastra una planta sobre otra <b>del mismo tipo y nivel</b> (o tócalas una tras otra). Se convierten en <b>la misma planta en la fase siguiente</b>: más grande, con otro aspecto y más fuerte. Hay 5 fases (Brote, Bronce, Plata, Oro y Leyenda): cada una sube el daño, la fase 3 en adelante dispara más rápido, las fases 4 y 5 hacen golpes críticos y la fase 5 acelera a sus vecinas. <b>Mover:</b> arrastra una planta a una casilla vacía para moverla, o sobre otra distinta para intercambiarlas.</p>
+      <p><b>Potenciar:</b> las cartas de abajo suben el daño de ese tipo de planta durante la partida (+25 % por nivel).</p>
+      <p><b>Insectos:</b> recorren el sendero alrededor del tablero. Si uno llega al final pierdes un ❤️, y si llega un jefe pierdes todas. Cada 5 oleadas aparece un <b>jefe</b>: el Escarabajo Rinoceronte, la Reina Avispa (invoca mosquitos) o la Mantis Segadora (corta tus plantas).</p>
+      <p><b>Duelo:</b> tú y la IA defendéis tableros paralelos contra las mismas oleadas. Pierde quien se quede antes sin corazones. A los 3:00 empieza el <b>Frenesí</b> y los insectos se vuelven más fuertes en cada oleada.</p>
+      <p><b>Plantas:</b> Lanzaespinas (daño directo), Flor Escarcha (ralentiza), Chile Ígneo (área), Ortiga Voltaica (rayo en cadena), Rociera (da rocío), Seta Tóxica (veneno que atraviesa corazas), Atrapamoscas (puede devorar insectos) y Flor Solar (acelera a sus vecinas).</p>
+      <p><b>Personajes:</b> hay 40, en 4 rarezas. <b>Cobre</b> y <b>plata</b> se consiguen fácil (al empezar, en la campaña, en cofres o reclutándolos con monedas). <b>Oro</b> y <b>legendario</b> son premium: solo salen en cofres raros y épicos y en el pase. Cada uno tiene un rol (tirador, ráfaga, francotirador, área, control, veneno, cadena, apoyo, productor, ejecutor o debilitador), estadísticas, proyectil y animaciones propias. Toca cualquiera en «Mazo y colección» o en el Álbum para ver su tarjeta.</p>
+      <p><b>Mazo y mejoras:</b> elige tus 5 plantas y mejóralas para siempre con monedas (+10 % de daño por nivel).</p>
+      <p><b>Escalera:</b> duelos contra la IA que suman o restan 🏆. Divisiones: Semilla, Brote, Tallo, Flor y Árbol Ancestral. Cada temporada dura 4 semanas: al terminar cobras monedas según tu división y tus trofeos bajan a la mitad.</p>
+      <p><b>Duelo amistoso:</b> igual que la Escalera, pero sin trofeos y con la IA de la dificultad que elijas en Opciones.</p>
+      <p><b>Repeticiones:</b> se guardan tus últimas 20 partidas para volver a verlas (x1, x2 o x4). Cada partida tiene una <b>semilla</b>: con la misma semilla el azar es idéntico.</p>
+      <p><b>Nivel de jugador:</b> cada partida da ⭐ experiencia. Al subir de nivel se desbloquean funciones nuevas (Duelo, Escalera, Comandante, mazos…) y nuevos comandantes.</p>
+      <p><b>Comandantes:</b> hay 16, cuatro por rareza (cobre, plata, oro y legendario). Cada uno tiene una habilidad activa (botón del comandante o tecla <b>Q</b>, con recarga) y una pasiva. Súbelos de nivel (1 a 10) con monedas: cada nivel da +10 % de potencia y −3 % de recarga. El primero, Abuela Nimbo, es gratis al desbloquear los comandantes; los de cobre y plata se reclutan con monedas; los de oro y legendarios son premium (solo cofres raros y épicos y el pase, niveles 15 y 25). En los duelos, la IA también lleva comandante según su nivel.</p>
+      <p><b>Álbum:</b> fichas de todas las plantas e insectos con tus estadísticas. Los insectos aparecen cuando eliminas el primero.</p>
+      <p><b>Cofres de semillas:</b> se ganan al vencer partidas (cada 3 victorias en la Escalera, uno raro) y en el pase. Solo se consiguen jugando, y sus probabilidades se muestran en el Inventario. Los objetos repetidos se cambian por 150 💰.</p>
+      <p><b>Equipo:</b> cada planta tiene 2 ranuras para abonos (Fuerza, Veloz o Certero). <b>Reliquias:</b> equipa hasta 2, con efectos para toda la partida. <b>Aspectos:</b> variantes de color de tus plantas, solo estéticas.</p>
+      <p><b>Pase de temporada:</b> gratis y completo. Cada partida suma ⭐ al pase; cada 100 ⭐ es un nivel con premio (30 niveles). Al terminar la temporada, los premios sin reclamar se entregan solos.</p>
+      <p><b>Rival espejo:</b> una IA que juega con el mazo, el comandante, el equipo y el estilo (ritmo, cuánto fusiona y cuánto potencia) de una de tus partidas guardadas. Desde «Repeticiones» puedes elegir contra cuál.</p>
+      <p><b>Auto-batalla:</b> 8 jardines (tú y 7 rivales IA) con 30 ❤. En cada ronda, en la <b>tienda</b> compras plantas (3 💰), cambias la tienda (2 💰), fusionas dos iguales para subirlas de nivel (conservan su tipo) y vendes arrastrándolas a «Vender». Al pulsar <b>¡LISTO!</b> todos los jardines defienden la misma oleada a la vez, sin que intervengas. Por parejas gana quien deja escapar menos insectos (en empate, quien eliminó más); el perdedor pierde vida. Cada ronda cobras 5 💰 más interés (+1 por cada 10 guardadas, máx. 3) y +1 con racha de victorias. Gana el último jardín en pie.</p>
+      <p><b>Eventos:</b> cada semana cambia la regla especial (Brasas, Estampida, Corazón de Cristal, Noche de Jefes, Gran Enjambre o Semana Blindada). La primera victoria de la semana da 200 💰 y un cofre raro.</p>
+      <p><b>Campaña:</b> 3 capítulos (El Huerto, El Pantano y El Invernadero) de 10 niveles. Cada capítulo se abre al terminar el anterior. Nuevos jefes: el <b>Ciempiés Acorazado</b> (se enrolla y se vuelve invulnerable), la <b>Polilla Sombra</b> (su polvo duerme a tus plantas) y la <b>Termita Reina</b> (cura a los insectos).</p>
+      <p><b>Taller:</b> <b>Jardín libre</b> (coloca plantas gratis, invoca insectos y jefes, elige rocío, vidas y oleadas), <b>Oleadas propias</b> (editor para crear, jugar, exportar e importar tus listas de oleadas) y <b>Duelo local</b> para 2 personas en la misma computadora (WASD + E/F/1–5 contra flechas + Shift derecho/Enter/6–0, o con el mouse). No dan premios.</p>
+      <p><b>Opciones:</b> perfil (hasta 3 jugadores en la misma computadora), volumen general, de música y de efectos, dificultad, velocidad inicial, reducir destellos, <b>formas para daltonismo</b> (cada planta lleva un símbolo: Lanzaespinas triángulo, Flor Escarcha hexágono, Chile Ígneo círculo, Ortiga Voltaica rayo, Rociera rombo, Seta Tóxica cruz, Atrapamoscas cuadrado y Flor Solar estrella), tamaño de texto, estadísticas y exportar o importar tu progreso a un archivo.</p>
+      <p><b>Teclado:</b> todo se puede jugar sin mouse. Menús: Tab y Enter, Escape vuelve. En partida: flechas o WASD mueven el cursor, Enter o F elige y fusiona, Espacio planta, 1–9 potencia, Q usa el comandante, V cambia la velocidad y Escape pausa. Auto-batalla: 1–5 compra, R cambia la tienda, X vende la planta elegida y G es ¡LISTO!. Jardín libre: T cambia el tipo, N trae una oleada y X activa el modo quitar.</p>
+      <p><b>Sonido y música:</b> todo se genera en el propio juego, sin archivos externos.</p>
+    </div>
+  </div>
+  <div class="screen hidden" id="pause">
+    <h2>Pausa</h2>
+    <button onclick="resume()">▶ Continuar</button>
+    <button class="gold" onclick="restart()">↻ Reiniciar</button>
+    <button class="red" onclick="toMenu()">🏠 Abandonar</button>
+    <button class="small" onclick="toggleFullscreen()">⛶ Pantalla completa</button>
+  </div>
+  <div class="screen hidden" id="result">
+    <h2 id="resTitle">¡Victoria!</h2>
+    <div id="resText"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="gold mid" id="resNext" onclick="nextLevel()">Siguiente ▶</button>
+      <button class="mid" id="resAgain" onclick="restart()">↻ Otra vez</button>
+      <button class="mid" id="resReplay" onclick="watchLast()">🎬 Ver repetición</button>
+      <button class="red mid" onclick="toMenu()">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+</div>
+<!-- El código del juego está en la carpeta js/ y se carga en este orden. -->
+<script src="js/00-idioma.js"></script>
+<script src="js/idioma-en.js"></script>
+<script src="js/idioma-en-fichas.js"></script>
+<script src="js/01-base.js"></script>
+<script src="js/02-audio.js"></script>
+<script src="js/03-datos.js"></script>
+<script src="js/04-progreso.js"></script>
+<script src="js/05-arte-personajes.js"></script>
+<script src="js/06-arte-insectos.js"></script>
+<script src="js/07-simulacion.js"></script>
+<script src="js/08-render.js"></script>
+<script src="js/09-interfaz.js"></script>
+<script src="js/10-misiones.js"></script>
+<script src="js/11-inicio.js"></script>
+</body>
+</html>
