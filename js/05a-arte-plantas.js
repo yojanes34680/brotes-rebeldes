@@ -6,10 +6,14 @@
 const RIG={},RIG_R=2.4,RCW=300,RCH=300,ROX=150,ROY=250,RT3=2.5,NECK_Y=-57,HEAD_S=1.15;
 const charStage=r=>r>=4?3:r>=2?2:r===1?1:2;// rango 0 (cartas, menús) = diseño completo de etapa II
 const RIG_NOST={};
-function stageLook(k,st){const L=JSON.parse(JSON.stringify(LOOK[k])),U=UT[k],H=L.h;L.w.sc=st===1?.88:st===2?1:1.14;
+// Etapa I: brote compacto con arma de madera. II: guerrero (+20 % de tamaño, hombreras de corteza, capa corta).
+// III: despertar legendario (alas de energía vivas, arma grande con núcleo que late, ojos que brillan, corola doble).
+const STG_S=[1,.9,1,1.1];
+function stageLook(k,st){const L=JSON.parse(JSON.stringify(LOOK[k])),U=UT[k]||{},H=L.h;if(L.cmd){L.w.sc=1;return L}L.w.sc=st===1?.82:st===2?1:1.22;
  if(st===1){if(L.bk&&!['quiver','pack','hood'].includes(L.bk.t))delete L.bk;if(L.hat&&['crown','halo','tiara'].includes(L.hat.t))delete L.hat;if(!L.hat)L.sprout=1;
-  if(H.t==='flower'){H.n=Math.max(4,Math.round(H.n*.75));delete H.ring2;H.pl*=.9}}
- else{L.collar=1;if(st===3){L.paul=L.b.t!=='armor';L.crest=1;if(H.t==='flower'&&!H.ring2)H.ring2=cshift(H.pc,.28);if(!H.glow)H.glow=U.shot}}
+  if(H.t==='flower'){H.n=Math.max(4,Math.round(H.n*.75));delete H.ring2;H.pl*=.9}if(L.w.t!=='none'){L.w.c1='#9a6a3a';L.w.c2='#5a3a1a';L.w.wood=1}}
+ else{L.collar=1;if(st===2){if(L.b.t!=='armor')L.paul='bark';if(!L.bk)L.bk={t:'cape',c:cshift(L.b.col,-.12),c2:L.b.dk}}
+  else{L.paul=L.b.t!=='armor';L.wings=U.shot||'#ffe680';if(H.t==='flower'&&!H.ring2)H.ring2=cshift(H.pc,.28);if(!H.glow)H.glow=U.shot}}
  return L}
 function rigCanvas(){const A=document.createElement('canvas');A.width=RCW*RIG_R;A.height=RCH*RIG_R;const c=A.getContext('2d');c.scale(RIG_R,RIG_R);c.translate(ROX,ROY);c.lineJoin='round';c.lineCap='round';return [A,c]}
 // Recorta la pieza a su caja (con contorno opcional) y aplica el filtro del aspecto.
@@ -27,15 +31,15 @@ function rigCrop(A,ol,filter){const R=RIG_R,Q=8,sw=Math.ceil(A.width/Q),sh=Math.
 function rigPart(draw,ol,filter){const [A,c]=rigCanvas();let res;PSTY=1;try{res=draw(c,A)}finally{PSTY=0}const p=rigCrop(A,ol,filter);if(p)p.res=res;return p||{res,none:1}}
 function rp(c,p,dens){if(p&&!p.none)c.drawImage(mip(p.img,p.w,p.h,dens),p.x,p.y,p.w,p.h)}
 // --- piezas nuevas de la evolución ---
-function rigCrest(c,L){const B=L.b,col=B.leaf||L.arm,dk=B.leafDk||cshift(col,-.5),sh=UT[L.k]?UT[L.k].shot:'#ffe680',st=L.h.ps==='flame'?'flame':L.h.ps==='round'?'round':'point';
- // abanico heroico de dos tonos detrás de los hombros: hojas del personaje + pétalos del color de su disparo
- for(const [a,l,j] of [[-3.0,50,.4],[-2.5,66,-.3],[-.64,66,.3],[-.14,50,-.4]]){c.save();c.translate(RT3,-50);c.rotate(a);petal(c,l,13,st,col,dk,j);c.restore()}
- for(const [a,l,j] of [[-2.75,58,.3],[-2.2,74,-.2],[-.94,74,.2],[-.39,58,-.3]]){c.save();c.translate(RT3,-50);c.rotate(a);petal(c,l,10,'point',cshift(sh,.15),cshift(sh,-.5),j);c.restore()}
- for(const a of [-2.75,-2.2,-.94,-.39]){const l=a<-2.5||a>-.5?58:74,px=RT3+Math.cos(a)*l,py=-50+Math.sin(a)*l;star(c,px,py,4.2,'#fff6c0')}}
+// Ala de energía (una; se dibuja dos veces, en espejo, y aletea en vivo).
+function rigWing(c,col){c.save();c.translate(6,-52);for(const [a,l,w,j] of [[-.6,60,14,.3],[-.18,52,11,-.2],[.24,40,9,.3]]){c.save();c.rotate(a);petal(c,l,w,'point',cshift(col,.4),cshift(col,-.3),j);c.restore()}
+ c.globalCompositeOperation='lighter';c.globalAlpha=.5;for(const a of [-.6,-.18,.24]){c.beginPath();c.moveTo(4,0);c.lineTo(Math.cos(a)*44,Math.sin(a)*44);c.strokeStyle='#ffffff';c.lineWidth=1.6;c.stroke()}c.restore()}
 function rigCollar(c,L){const col=L.b.leaf||'#7fd04a',dk=L.b.leafDk||'#2f7a1f';for(const a of [.3,2.85,.85,2.3,1.35,1.8])leafHQ(c,RT3,-57,13,a,col,dk)}
-function rigPaul(c,L){const B=L.b,w=B.t==='bulky'?1.22:B.t==='slim'?.86:1,col=B.l||L.arm,dk=B.dk;
- for(const sd of [-1,1]){const px=sd*17*w+(sd>0?2:0);for(const [a,l] of [[-.55,18],[-.1,16],[.35,12]])leafHQ(c,px,-55,l,sd>0?a:Math.PI-a,B.leaf||'#7fd04a',B.leafDk||'#2f7a1f');
-  VOL(c,cc=>{E(cc,px,-54,9,7)},col,{bb:[px-9,-61,px+9,-47],light:'#ffffff',dark:dk,spec:[px-3,-57,2.5,1.4,0]});E(c,px,-54,2.4,2.4);P(c,'#ffd23f',1)}}
+function rigPaul(c,L){const B=L.b,w=B.t==='bulky'?1.22:B.t==='slim'?.86:1,bark=L.paul==='bark',col=bark?'#9a7240':B.l||L.arm,dk=bark?'#3a2610':B.dk;
+ for(const sd of [-1,1]){const px=sd*17*w+(sd>0?2:0);if(!bark)for(const [a,l] of [[-.55,18],[-.1,16],[.35,12]])leafHQ(c,px,-55,l,sd>0?a:Math.PI-a,B.leaf||'#7fd04a',B.leafDk||'#2f7a1f');
+  VOL(c,cc=>{E(cc,px,-54,bark?10:9,bark?7.5:7)},col,{bb:[px-10,-61.5,px+10,-46.5],light:bark?'#d8b080':'#ffffff',dark:dk,spec:[px-3,-57,2.5,1.4,0]});
+  if(bark){c.strokeStyle='rgba(40,25,10,.6)';c.lineWidth=1.3;for(const dy of [-2.5,2]){c.beginPath();c.moveTo(px-7,-54+dy);c.quadraticCurveTo(px,-56+dy,px+7,-54+dy);c.stroke()}for(const dx of [-5,5]){E(c,px+dx,-50,1.3,1.3);P(c,'#c8ccd8',.8)}}
+  else{E(c,px,-54,2.4,2.4);P(c,'#ffd23f',1)}}}
 function rigSprout(c,I){const y=I.top+3;c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(2,y-6,0,y-10);c.strokeStyle='#2f6a1a';c.lineWidth=2.6;c.stroke();leafHQ(c,0,y-9,12,-2.5,'#9ae86a','#2f7a1f');leafHQ(c,0,y-9,12,-.65,'#9ae86a','#2f7a1f')}
 // --- ojos y expresiones ---
 function eyeGeo(H,I){if(RIGF&&RIGF.jaw)return RIGF;const fr=I.fr,fy=I.fy;return {ex:2.5,ey:fy-fr*.08,sp:fr*.4,rx:fr*.27,ry:fr*.31,mx:4,my:fy+fr*.52,mw:fr*.3}}
@@ -80,7 +84,7 @@ function exprLayer(c,L,G,ex){const H=L.h,skin=H.skin||'#cfe8b0';
 function rigParts(k,st,skin){const key=k+'|'+st+'|'+(skin||'');if(RIG[key])return RIG[key];
  const L=stageLook(k,st),U=UT[k],hy=L.h.y||-80,bulky=L.b.t==='bulky',S=skin&&SKINS[skin],F=S?S.f:null,R=RIG_R;L.k=k;
  const P={L,st,F,ex:{}};
- P.crest=L.crest?rigPart(c=>rigCrest(c,L),1,F):null;
+ P.wing=L.wings?rigPart(c=>rigWing(c,L.wings),1,F):null;
  P.back=L.bk?rigPart((c,A)=>{if(['cape','mantle','flamewings'].includes(L.bk.t))chBack(c,L.bk,hy);else litLayer(A,R,g=>chBack(g,L.bk,hy),ROX,ROY+hy+20,45,.8)},1,F):null;
  P.armB=rigPart(c=>{armHQ(c,-14,-46,-25,-30,cshift(L.arm,-.15),bulky?8.5:6.5)},1,F);
  P.legs=rigPart(c=>chBody(c,L.b,'legs'),1,F);
@@ -100,7 +104,7 @@ function rigWarm(keys,skins,stages){for(const k of keys)for(const st of stages||
 // --- dibujo ---
 const QUIRK={tirador:'aim',franco:'aim',rafaga:'spin',area:'stretch',control:'look',cadena:'buzz',productor:'hop',apoyo:'hop',veneno:'chuckle',debil:'chuckle',ejecutor:'menace'};
 function drawChar(c,k,x,y,s,t,rank,pop,skin,af,face,st){if(UNIT_IMG[k]&&artPng())return drawCharPng(c,k,x,y,s,t,rank,pop,skin,af,face);
- st=st||RIG_NOST;face=face||1;const U=UT[k],stg=charStage(rank|0),P=rigParts(k,stg,skin),L=P.L,p=pop||0,a=clamp((af||0)/.3,0,1),S=s*.82*PH_SZ[Math.min(rank|0,5)],tier=U.t||'cobre';
+ st=st||RIG_NOST;face=face||1;const U=UT[k],stg=charStage(rank|0),P=rigParts(k,stg,skin),L=P.L,p=pop||0,a=clamp((af||0)/.3,0,1),S=s*.82*PH_SZ[Math.min(rank|0,5)]*STG_S[stg],tier=U.t||'cobre';
  const seed=st.seed!=null?st.seed:Math.round(x*.37+y*.11),ph=t+seed*.71,still=st===RIG_NOST&&!t,ant=st.ant||0,mo=st.morph||0;
  let ix=0,iy=0,rot=0,sx=1,sy=1,wa=0,hr=0,lx=.75,ly=0,ex='idle',armSw=0;
  if(!still)switch(L.idle){case 'sway':rot=Math.sin(ph*2)*.05;break;case 'breathe':sy=1+Math.sin(ph*2.4)*.03;sx=1-Math.sin(ph*2.4)*.015;break;case 'hop':iy=-Math.abs(Math.sin(ph*3))*5;break;case 'float':iy=-7+Math.sin(ph*2)*3.5;break;default:iy=Math.sin(ph*3.2)*1.8}
@@ -125,12 +129,14 @@ function drawChar(c,k,x,y,s,t,rank,pop,skin,af,face,st){if(UNIT_IMG[k]&&artPng()
  if(st.cheer){ex='cel';iy-=Math.abs(Math.sin(ph*9))*6;armSw=-1}
  // metamorfosis (0,55 s): capullo de luz → onda → rebote heroico
  let mS=1,cov=0;if(mo>0){if(mo<.35){const f=mo/.35;mS=1-.25*f;cov=f}else{const f=(mo-.35)/.65;mS=1+.32*Math.sin(f*Math.PI)*(1-f*.6);cov=Math.max(0,1-f*3);ex='cel'}}
+ if(mo>0&&mo<.95){const f=Math.sin(mo/.95*Math.PI);iy-=15*f;rot+=Math.sin(mo*Math.PI*3)*.1*f}// se eleva 15 px girando
  c.save();c.translate(x,y+36*s);c.scale(face,1);E(c,0,0,24*s*(L.idle==='float'?.72:1),6*s);c.fillStyle='rgba(0,0,0,.3)';c.fill();
  c.scale(S,S);tierBack(c,tier,t);phaseBack(c,rank,t,U.shot,P.topY);c.translate(ix,iy);c.rotate(rot);c.scale(sx*(1+p*.18)*mS,sy*(1-p*.1)*mS*(mo>.35&&mo<.6?1.08:1));
  if(L.atk==='flash'&&a>0){c.globalAlpha=a*.55;circ(c,0,-70,62,U.shot);c.globalAlpha=1}
  if(L.fx==='glow'){c.globalAlpha=.22+.1*Math.sin(t*2.5)+a*.3;circ(c,0,-66,56,L.fxc||'#fff');c.globalAlpha=1}
  const dens=S*DPR*Math.max(sx,sy)*(1+p*.18)*mS*1.15;
- if(P.crest){c.save();c.translate(RT3,-54);c.rotate(lag*.02);c.translate(-RT3,54);rp(c,P.crest,dens);c.restore()}
+ if(P.wing){const fl=still?0:Math.sin(ph*3.2)*.09+a*.12;if(!still){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.28+.14*Math.sin(ph*2.2);const R2=64;c.drawImage(glowSprite(U.shot),-R2,-72-R2,R2*2,R2*2);c.restore()}
+  for(const sd of [1,-1]){c.save();c.scale(sd,1);c.translate(6,-52);c.rotate(-fl);c.translate(-6,52);rp(c,P.wing,dens);c.restore()}}
  if(P.back){c.save();c.translate(0,-55);c.rotate(-lag*.012);c.translate(0,55);rp(c,P.back,dens);c.restore()}
  c.save();c.translate(-14,-46);c.rotate(armSw*.6+lag*.03-wa*.15);c.translate(14,46);rp(c,P.armB,dens);c.restore();
  rp(c,P.legs,dens);
@@ -141,7 +147,7 @@ function drawChar(c,k,x,y,s,t,rank,pop,skin,af,face,st){if(UNIT_IMG[k]&&artPng()
  if(ex==='idle'||ex==='ant'||ex==='atk'){const G=P.G;for(const e of P.eyes){const ixx=e.x+e.rx*(.06+.24*lx),iyy=G.ey+e.ry*(.1+.24*ly),sc=e.ir/P.irMax,r=P.iris.rad*sc;
   c.save();E(c,e.x,G.ey,e.rx,e.ry);c.clip();c.drawImage(P.iris.img,ixx-r,iyy-r,r*2,r*2);c.restore()}}
  rp(c,rigExpr(P,ex),hd);rp(c,P.top,hd);c.restore();
- const W=L.w,hx=W.hx+lag*.35,hyy=W.hy+lag;if(W.t!=='none'){c.save();c.translate(hx,hyy);c.rotate((W.a||0)+wa+lag*.015);if(W.sc!==1)c.scale(W.sc,W.sc);drawWeapon(c,W,t,a);muzzle(c,W,a,U.shot);c.restore()}
+ const W=L.w,hx=W.hx+lag*.35,hyy=W.hy+lag;if(W.t!=='none'){c.save();c.translate(hx,hyy);c.rotate((W.a||0)+wa+lag*.015);if(W.sc!==1)c.scale(W.sc,W.sc);drawWeapon(c,W,t,a);muzzle(c,W,a,U.shot);if(stg===3&&!still&&TIP[W.t]){const [tx,ty]=TIP[W.t],R2=13+3*Math.sin(t*5+seed);c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.6+.3*Math.sin(t*5+seed);c.drawImage(glowSprite(U.shot),tx*1.25-R2,ty*1.25-R2,R2*2,R2*2);c.restore()}c.restore()}
  armHQ(c,13,-46,hx,hyy,L.arm,L.b.t==='bulky'?8.5:6.5);
  if(!(LOWFX&&!still))chFx(c,L,t,a);
  if(cov>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=cov;const R2=70;c.drawImage(glowSprite(U.shot||'#fff'),-R2,-60-R2,R2*2,R2*2);c.drawImage(glowSprite('#ffffff'),-R2*.6,-60-R2*.6,R2*1.2,R2*1.2);c.restore();
@@ -155,5 +161,5 @@ function drawChar(c,k,x,y,s,t,rank,pop,skin,af,face,st){if(UNIT_IMG[k]&&artPng()
 const MORPH=new WeakMap();
 function morphOf(b,i,u,t){let m=MORPH.get(b);if(!m){m=[];MORPH.set(b,m)}const o=m[i];
  if(!o||t<o.t-.5){m[i]={u,r:u.rank,t0:-9,t};return 0}
- if((o.u!==u&&u.rank>=2&&u.pop>=.3)||(o.u===u&&u.rank>o.r))o.t0=t;
- o.u=u;o.r=u.rank;o.t=t;const f=(t-o.t0)/.55;return f>0&&f<1?f:0}
+ if((o.u!==u&&u.rank>=2&&u.pop>=.3)||(o.u===u&&u.rank>o.r)){o.t0=t;if(!b.isAI&&audible(b))sfx('morph',u.rank)}
+ o.u=u;o.r=u.rank;o.t=t;const f=(t-o.t0)/.6;return f>0&&f<1?f:0}

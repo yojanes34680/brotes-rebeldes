@@ -1,9 +1,9 @@
 // Brotes Rebeldes · Service worker: guarda una copia de todos los archivos para jugar sin conexión.
 // Con conexión siempre se carga la versión más nueva (y se actualiza la copia); sin conexión se usa la copia.
 // Si agregas archivos al juego (un .js nuevo o una imagen), añádelos a FILES y cambia VERSION.
-const VERSION='brotes-18638be';
+const VERSION='brotes-9a44a1e';
 const FILES=['./','index.html','manifest.webmanifest',
- 'js/00-idioma.js','js/idioma-en.js','js/idioma-en-fichas.js','js/01-base.js','js/02-audio.js','js/03-datos.js','js/04-progreso.js','js/05-arte-personajes.js','js/05b-rig-personajes.js','js/05c-comandantes-campo.js',
+ 'js/00-idioma.js','js/idioma-en.js','js/idioma-en-fichas.js','js/01-base.js','js/02-audio.js','js/03-datos.js','js/04-progreso.js','js/05-arte-personajes.js','js/05a-arte-plantas.js','js/05b-arte-comandantes.js',
  'js/06-arte-insectos.js','js/07-simulacion.js','js/08-render.js','js/09-interfaz.js','js/10-misiones.js','js/11-inicio.js',
  'assets/units/espina.png','assets/units/hielo.png','assets/units/fuego.png','assets/units/rayo.png','assets/units/rocio.png',
  'assets/icons/icon-192.png','assets/icons/icon-512.png','assets/icons/icon-maskable-512.png','assets/icons/apple-touch-icon.png','assets/icons/favicon-32.png'];

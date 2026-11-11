@@ -446,7 +446,7 @@ function drawShot(c,b,s,sc,t){const col=(UT[s.k]||{}).shot||'#ffffff',z=1+s.rank
  const oy=s.y;s.y=Y;try{drawShot0(c,b,s,sc,t)}finally{s.y=oy}
  c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.85;const r2=6*sc*z;c.drawImage(glowSprite('#ffffff'),X-r2,Y-r2,r2*2,r2*2);c.restore()}
 // Destello en la punta del arma al disparar.
-const TIP={spear:[0,-86],staff:[0,-72],wand:[0,-38],gauntlet:[8,-6],can:[32,-18],flask:[0,-20],cannon:[30,0],mortar:[21,-13],sling:[0,-20],fan:[0,-26],book:[7,-2],bow:[30,0],daggers:[0,-26],scythe:[-38,-50],lantern:[0,20],trumpet:[30,16],whip:[40,-10]};
+const TIP={shears:[0,-46],hammer:[0,-47],spear:[0,-86],staff:[0,-72],wand:[0,-38],gauntlet:[8,-6],can:[32,-18],flask:[0,-20],cannon:[30,0],mortar:[21,-13],sling:[0,-20],fan:[0,-26],book:[7,-2],bow:[30,0],daggers:[0,-26],scythe:[-38,-50],lantern:[0,20],trumpet:[30,16],whip:[40,-10]};
 // Aviso (v:10): retícula que se cierra sobre las casillas que el jefe va a atacar.
 const TEL_COL={cutT:'#ff3a3a',dustT:'#c08aff',wT:'#f0f0ff',sT:'#ff7a3a'};
 function drawTelegraphs(c,b,t){const sc=b.cs/96,cs=b.cs;for(const ins of b.insects){if(ins.dead||!ins.tel||!ins.tel.length)continue;const rem=ins[ins.telK];if(!(rem<=1.25))continue;const f=1-clamp(rem/1.2,0,1),col=TEL_COL[ins.telK]||'#ff3a3a',[ix,iy]=posAt(b,ins.d);
@@ -632,7 +632,7 @@ function draw0(){const c=cx,g=G,t=g.t;drawBiomeBg(c,g,t);if(g.mode==='auto')retu
  drop(c,sm.x+sm.w/2-24,sm.y+sm.h*.7,.8);txt(c,me.cost,sm.x+sm.w/2+10,sm.y+sm.h*.7,duel?18:20,'#fff','center','#0006');
  const dw=ct.dew;rr(c,dw.x,dw.y,dw.w,dw.h,14,'#000a');drop(c,dw.x+24,dw.y+dw.h/2,1);txt(c,Math.floor(me.dew),dw.x+dw.w/2+14,dw.y+dw.h/2,24,'#bfeaff');
  const iP=g.introT>0?introP(g):1;ct.cards.forEach((cd,ci)=>{const l=me.power[cd.k]||1,cost=powerCost(me,cd.k),ok=l<5&&me.dew>=cost;
-  rr(c,cd.x,cd.y,cd.w,cd.h,12,'#e8dcc0','#6a4a22',3);if(iP>=.82+ci*.03)drawUnit(c,cd.k,cd.x+cd.w/2,cd.y+cd.h*.36,.5,t,0,0,me.skin[cd.k]);
+  rr(c,cd.x,cd.y,cd.w,cd.h,12,'#e8dcc0','#6a4a22',3);if(iP>=.87+ci*.02)drawUnit(c,cd.k,cd.x+cd.w/2,cd.y+cd.h*.36,.5,t,0,0,me.skin[cd.k]);
   txt(c,'Nv '+l,cd.x+cd.w-6,cd.y+12,12,'#6a3a10','right');
   rr(c,cd.x+5,cd.y+cd.h-26,cd.w-10,21,8,l>=5?'#8a8a8a':ok?'#2d6fd6':'#7a8aa0');txt(c,l>=5?'MÁX':'⬆ '+cost,cd.x+cd.w/2,cd.y+cd.h-15,13,'#fff')});
  rr(c,BTN_PAUSE.x,BTN_PAUSE.y,BTN_PAUSE.w,BTN_PAUSE.h,10,'#e8dcc0','#6a4a22',2);c.fillStyle='#333';c.fillRect(BTN_PAUSE.x+15,BTN_PAUSE.y+11,6,18);c.fillRect(BTN_PAUSE.x+25,BTN_PAUSE.y+11,6,18);

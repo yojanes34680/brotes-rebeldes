@@ -98,6 +98,7 @@ const SFX={
  kill:()=>{nz(.09,{f:1800,fEnd:500,v:.08});osc(NOTE(14),.08,{type:'triangle',v:.05,slide:.5});INS.bell(36,.05,.03)},
  plant:()=>{nz(.12,{ft:'lowpass',f:900,v:.1});osc(NOTE(7),.12,{type:'triangle',v:.12,slide:1.6,at:.03,wet:.2})},
  merge:r=>{const top=Math.min(5,r||2);[0,4,7,12,16].slice(0,2+top).forEach((s2,i)=>INS.bell(12+s2+top*2,i*.06,.07));if(top>=5){osc(NOTE(-12),.8,{type:'sawtooth',v:.06,lp:500,lpEnd:2400,wet:.4});nz(.6,{f:3000,fEnd:8000,v:.05,wet:.5})}},
+ morph:r=>{const top=Math.min(5,r||2);[0,4,7,12,16,19,24].forEach((s2,i)=>INS.bell(10+s2+top,.04+i*.045,.055));nz(.4,{f:2000,fEnd:9000,v:.035,wet:.5})},
  power:()=>{osc(NOTE(12),.25,{v:.12,slide:2,wet:.3});INS.bell(31,.12,.06)},
  leak:()=>{osc(NOTE(-24),.5,{type:'sawtooth',v:.16,slide:.5,lp:500});INS.taiko(0,.5);osc(NOTE(7),.12,{type:'square',v:.05,at:.05,lp:2000});osc(NOTE(3),.2,{type:'square',v:.05,at:.18,lp:2000})},
  wave:()=>{INS.brass(7,.18,0,.08);INS.brass(12,.4,.18,.09);INS.snare(0,.12)},
